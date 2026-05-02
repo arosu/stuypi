@@ -50,6 +50,7 @@
           type: plex
           url: http://16.242.6.136:32400
           key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
+          fields: ["streams", "movies", "tv"]
 - System:
     - Uptime Kuma:
         icon: uptime-kuma.png
