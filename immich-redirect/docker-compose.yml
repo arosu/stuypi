@@ -1,0 +1,9 @@
+services:
+  immich-redirect:
+    image: nginx:alpine
+    container_name: immich-redirect
+    restart: unless-stopped
+    ports:
+      - "8765:80"
+    volumes:
+      - ./html:/usr/share/nginx/html:ro

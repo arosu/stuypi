@@ -1,0 +1,14 @@
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/info-widgets/
+- openmeteo:
+    label: NYC
+    latitude: 40.730413
+    longitude: -73.979460
+    timezone: America/New_York
+    units: metric
+    cache: 10
+    format:
+      maximumFractionDigits: 1
+- search:
+    provider: google
+    target: _blank

@@ -1,0 +1,87 @@
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/services/
+- Media:
+    - Immich:
+        icon: immich.png
+        href: http://16.242.6.136:8765
+        widgets:
+          - type: customapi
+            display: block
+            columns: 4
+            url: http://16.242.6.136:2283/api/server/statistics
+            headers:
+              x-api-key: "{{HOMEPAGE_VAR_IMMICH_API_KEY}}"
+              Accept: application/json
+            mappings:
+              - field: usageByUser.0.userName
+                format: text
+              - field: usageByUser.0.photos
+                label: Photos
+                format: number
+              - field: usageByUser.0.videos
+                label: Videos
+                format: number
+              - field: usageByUser.0.usage
+                label: Usage
+                format: bytes
+          - type: customapi
+            display: block
+            columns: 4
+            url: http://16.242.6.136:2283/api/server/statistics
+            headers:
+              x-api-key: "{{HOMEPAGE_VAR_IMMICH_API_KEY}}"
+              Accept: application/json
+            mappings:
+              - field: usageByUser.1.userName
+                format: text
+              - field: usageByUser.1.photos
+                label: Photos
+                format: number
+              - field: usageByUser.1.videos
+                label: Videos
+                format: number
+              - field: usageByUser.1.usage
+                label: Usage
+                format: bytes
+    - Plex:
+        icon: plex.png
+        href: http://16.242.6.136:32400
+        widget:
+          type: plex
+          url: http://16.242.6.136:32400
+          key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
+- System:
+    - Uptime Kuma:
+        icon: uptime-kuma.png
+        href: http://16.242.6.136:3001/status/stuypi
+        widget:
+          type: uptimekuma
+          url: http://16.242.6.136:3001
+          slug: stuypi
+    - Beszel:
+        icon: beszel-light.png
+        href: http://16.242.6.136:8090/system/r5eutb4cgcolc4t
+        widget:
+          type: beszel
+          url: http://16.242.6.136:8090
+          username: mail@alexandrurosu.com
+          password: "{{HOMEPAGE_VAR_BESZEL_PASSWORD}}"
+          systemId: stuypi
+          version: 2
+    - Speedtest Tracker:
+        icon: speedtest-tracker.png
+        href: http://16.242.6.136:8080
+        widget:
+          type: speedtest
+          url: http://16.242.6.136:8080
+          version: 1
+          key: "{{HOMEPAGE_VAR_SPEEDTEST_TRACKER_API_KEY}}"
+          bitratePrecision: 3
+    - Pi-hole:
+        icon: pi-hole.png
+        href: http://16.242.6.136/admin
+        widget:
+          type: pihole
+          url: http://16.242.6.136
+          version: 6
+          key: "{{HOMEPAGE_VAR_PIHOLE_PASSWORD}}"
