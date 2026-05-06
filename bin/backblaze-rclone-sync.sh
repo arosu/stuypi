@@ -12,6 +12,7 @@ PAIRS=(
   "/mnt/ssd/files/arosu:alex-file-backups"
   "/mnt/ssd/photo-library/library/iclotea:ioana-photo-backups"
   "/mnt/ssd/files/iclotea:ioana-file-backups"
+  "/mnt/ssd/recipes/backups:rosu-recipes-backup"
 )
 
 # Get current timestamp

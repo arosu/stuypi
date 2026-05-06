@@ -51,6 +51,15 @@
           url: http://16.242.6.136:32400
           key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
           fields: ["streams", "movies", "tv"]
+    - Mealie:
+        icon: mealie.png
+        href: http://recipes.alexandrurosu.com
+        description: Recipes
+        widget:
+          type: mealie
+          url: http://16.242.6.136:9925
+          key: "{{HOMEPAGE_VAR_MEALIE_API_KEY}}"
+          version: 2
 - System:
     - Uptime Kuma:
         icon: uptime-kuma.png

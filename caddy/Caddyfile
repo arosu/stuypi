@@ -38,3 +38,7 @@ pihole.alexandrurosu.com:80 {
     redir @root /admin 302
     reverse_proxy localhost:8083
 }
+
+recipes.alexandrurosu.com:80 {
+    reverse_proxy localhost:9925
+}
