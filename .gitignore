@@ -11,6 +11,7 @@ speedtest-tracker/config/
 uptime-kuma/data/
 plex/config/
 homepage/config/logs/
+arr-stack/config/
 
 # OS / editor cruft
 .DS_Store

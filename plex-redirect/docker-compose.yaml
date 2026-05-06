@@ -1,0 +1,9 @@
+services:
+  plex-redirect:
+    image: nginx:alpine
+    container_name: plex-redirect
+    restart: unless-stopped
+    ports:
+      - "8766:80"
+    volumes:
+      - ./html:/usr/share/nginx/html:ro

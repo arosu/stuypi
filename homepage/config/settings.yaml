@@ -5,6 +5,15 @@ favicon: /images/favicon.ico
 layout:
   Media:
     style: row
+  System:
+    style: row
+  Arr Stack:
+    style: row
+    columns: 1
+  Arrs:
+    style: row
+    columns: 2
+    header: false
 providers:
   openweathermap: openweathermapapikey
   weatherapi: weatherapiapikey

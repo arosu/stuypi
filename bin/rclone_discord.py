@@ -7,8 +7,19 @@ import requests
 from datetime import datetime
 
 # --- CONFIG ---
-WEBHOOK_URL = "https://discord.com/api/webhooks/1499262343870156860/ME4rU_lyYNXXlqxhvxx93CzGcjzX4plEiVpCs76cV_XS74pF_ZKPCQueiFNwnutNMhTJ"
-KUMA_PUSH_URL = "http://16.242.6.136:3001/api/push/PYS1rRzgcYQ1OmK1MFzG1aYk86DqGeMp"
+# Load .env so this script works under cron without a sourced shell.
+ENV_FILE = "/home/arosu/stuypi-services/.env"
+if os.path.isfile(ENV_FILE):
+    with open(ENV_FILE) as _f:
+        for _line in _f:
+            _m = re.match(
+                r'\s*(?:export\s+)?([A-Z_][A-Z0-9_]*)\s*=\s*"?([^"\n]*)"?\s*$', _line
+            )
+            if _m:
+                os.environ.setdefault(_m.group(1), _m.group(2))
+
+WEBHOOK_URL = os.environ["RCLONE_DISCORD_WEBHOOK_URL"]
+KUMA_PUSH_URL = os.environ["KUMA_PUSH_URL_BACKBLAZE"]
 LOG_DIR = "/home/arosu/logs/backblaze-rclone-sync/"
 
 

@@ -27,5 +27,5 @@ services:
     environment:
       LISTEN: /beszel_socket/beszel.sock
       KEY: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAEnulpn8OotnNowpGvXKYo74pEPsUWOFch4wcQkguRj'
-      TOKEN: 4115-4387c781bc-a1e-7a24c35b2f8
+      TOKEN: ${BESZEL_AGENT_TOKEN}
       HUB_URL: http://localhost:8090

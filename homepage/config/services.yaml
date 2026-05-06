@@ -45,7 +45,7 @@
                 format: bytes
     - Plex:
         icon: plex.png
-        href: http://16.242.6.136:32400
+        href: http://16.242.6.136:8766
         widget:
           type: plex
           url: http://16.242.6.136:32400
@@ -86,3 +86,40 @@
           url: http://16.242.6.136
           version: 6
           key: "{{HOMEPAGE_VAR_PIHOLE_PASSWORD}}"
+- Arr Stack:
+    - SABnzbd:
+        icon: sabnzbd.png
+        href: http://16.242.6.136:8181
+        widget:
+          type: sabnzbd
+          url: http://16.242.6.136:8181
+          key: "{{HOMEPAGE_VAR_SABNZBD_API_KEY}}"
+- Arrs:
+    - Sonarr:
+        icon: sonarr.png
+        href: http://16.242.6.136:8989
+        widget:
+          type: sonarr
+          url: http://16.242.6.136:8989
+          key: "{{HOMEPAGE_VAR_SONARR_API_KEY}}"
+    - Radarr:
+        icon: radarr.png
+        href: http://16.242.6.136:7878
+        widget:
+          type: radarr
+          url: http://16.242.6.136:7878
+          key: "{{HOMEPAGE_VAR_RADARR_API_KEY}}"
+    - Prowlarr:
+        icon: prowlarr.png
+        href: http://16.242.6.136:9696
+        widget:
+          type: prowlarr
+          url: http://16.242.6.136:9696
+          key: "{{HOMEPAGE_VAR_PROWLARR_API_KEY}}"
+    - Bazarr:
+        icon: bazarr.png
+        href: http://16.242.6.136:6767
+        widget:
+          type: bazarr
+          url: http://16.242.6.136:6767
+          key: "{{HOMEPAGE_VAR_BAZARR_API_KEY}}"
