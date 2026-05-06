@@ -3,7 +3,7 @@
 title: stuypi
 favicon: /images/favicon.ico
 layout:
-  Media:
+  General:
     style: row
   System:
     style: row

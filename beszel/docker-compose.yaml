@@ -4,7 +4,7 @@ services:
     container_name: beszel
     restart: unless-stopped
     environment:
-      APP_URL: http://metrics.alexandrurosu.com
+      APP_URL: https://metrics.alexandrurosu.com
     ports:
       - 8090:8090
     volumes:
@@ -18,8 +18,8 @@ services:
     devices:
       - /dev/sda:/dev/sda
     cap_add:
-      - SYS_RAWIO # required for S.M.A.R.T. data
-      # - SYS_ADMIN # required for NVMe S.M.A.R.T. data
+      - SYS_RAWIO  # required for S.M.A.R.T. data
+      # - SYS_ADMIN  # required for NVMe S.M.A.R.T. data
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./beszel_agent_data:/var/lib/beszel-agent

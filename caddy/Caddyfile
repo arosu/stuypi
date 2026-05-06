@@ -1,44 +1,61 @@
-# Phase 1: HTTP only. Phase 2 (after Cloudflare DNS transfer) will switch to
-# HTTPS via Let's Encrypt DNS-01 by adding a Cloudflare API token + tls block.
 {
-    auto_https off
+    email mail@alexandrurosu.com
     admin off
 }
 
-home.alexandrurosu.com:80 {
+(cf_tls) {
+    tls {
+        dns cloudflare {env.CF_API_TOKEN}
+    }
+}
+
+stuypi.alexandrurosu.com {
+    import cf_tls
     reverse_proxy localhost:3000
 }
 
-watch.alexandrurosu.com:80 {
+home.alexandrurosu.com {
+    import cf_tls
+    reverse_proxy localhost:8123 {
+        flush_interval -1
+    }
+}
+
+watch.alexandrurosu.com {
+    import cf_tls
     reverse_proxy localhost:32400 {
         flush_interval -1
     }
 }
 
-photos.alexandrurosu.com:80 {
+photos.alexandrurosu.com {
+    import cf_tls
     reverse_proxy localhost:2283
 }
 
-status.alexandrurosu.com:80 {
-    @root path /
-    redir @root /status/stuypi 302
+status.alexandrurosu.com {
+    import cf_tls
     reverse_proxy localhost:3001
 }
 
-metrics.alexandrurosu.com:80 {
+metrics.alexandrurosu.com {
+    import cf_tls
     reverse_proxy localhost:8090
 }
 
-speedtest.alexandrurosu.com:80 {
+speedtest.alexandrurosu.com {
+    import cf_tls
     reverse_proxy localhost:8080
 }
 
-pihole.alexandrurosu.com:80 {
+pihole.alexandrurosu.com {
+    import cf_tls
     @root path /
     redir @root /admin 302
     reverse_proxy localhost:8083
 }
 
-recipes.alexandrurosu.com:80 {
+recipes.alexandrurosu.com {
+    import cf_tls
     reverse_proxy localhost:9925
 }

@@ -3,10 +3,12 @@ repos:
     rev: v0.13.0
     hooks:
       - id: yamlfmt
+        exclude: ^home-assistant/config/(automations\.yaml|scripts\.yaml|scenes\.yaml|blueprints/)
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.35.1
     hooks:
       - id: yamllint
+        exclude: ^home-assistant/config/(automations\.yaml|scripts\.yaml|scenes\.yaml|blueprints/)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.9
     hooks:

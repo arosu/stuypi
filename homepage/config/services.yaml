@@ -1,9 +1,16 @@
 # For configuration options and examples, please see:
 # https://gethomepage.dev/configs/services/
-- Media:
+- General:
+    - Home Assistant:
+        icon: home-assistant.png
+        href: https://home.alexandrurosu.com
+        widget:
+          type: homeassistant
+          url: http://16.242.6.136:8123
+          key: "{{HOMEPAGE_VAR_HASS_TOKEN}}"
     - Immich:
         icon: immich.png
-        href: http://photos.alexandrurosu.com
+        href: https://photos.alexandrurosu.com
         widgets:
           - type: customapi
             display: block
@@ -45,7 +52,7 @@
                 format: bytes
     - Plex:
         icon: plex.png
-        href: http://watch.alexandrurosu.com
+        href: https://watch.alexandrurosu.com
         widget:
           type: plex
           url: http://16.242.6.136:32400
@@ -53,7 +60,7 @@
           fields: ["streams", "movies", "tv"]
     - Mealie:
         icon: mealie.png
-        href: http://recipes.alexandrurosu.com
+        href: https://recipes.alexandrurosu.com
         description: Recipes
         widget:
           type: mealie
@@ -63,14 +70,14 @@
 - System:
     - Uptime Kuma:
         icon: uptime-kuma.png
-        href: http://status.alexandrurosu.com
+        href: https://status.alexandrurosu.com
         widget:
           type: uptimekuma
           url: http://16.242.6.136:3001
           slug: stuypi
     - Beszel:
         icon: beszel-light.png
-        href: http://metrics.alexandrurosu.com/system/r5eutb4cgcolc4t
+        href: https://metrics.alexandrurosu.com/system/r5eutb4cgcolc4t
         widget:
           type: beszel
           url: http://16.242.6.136:8090
@@ -80,7 +87,7 @@
           version: 2
     - Speedtest Tracker:
         icon: speedtest-tracker.png
-        href: http://speedtest.alexandrurosu.com
+        href: https://speedtest.alexandrurosu.com
         widget:
           type: speedtest
           url: http://16.242.6.136:8080
@@ -89,7 +96,7 @@
           bitratePrecision: 3
     - Pi-hole:
         icon: pi-hole.png
-        href: http://pihole.alexandrurosu.com
+        href: https://pihole.alexandrurosu.com
         widget:
           type: pihole
           url: http://16.242.6.136:8083

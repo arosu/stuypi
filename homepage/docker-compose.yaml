@@ -10,7 +10,7 @@ services:
       - /home/arosu/stuypi-services/homepage/images:/app/public/images:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
-      HOMEPAGE_ALLOWED_HOSTS: 16.242.6.136:3000,home.alexandrurosu.com # required, may need port. See gethomepage.dev/installation/#homepage_allowed_hosts
+      HOMEPAGE_ALLOWED_HOSTS: 16.242.6.136:3000,stuypi.alexandrurosu.com  # required, may need port. See gethomepage.dev/installation/#homepage_allowed_hosts
       HOMEPAGE_VAR_IMMICH_API_KEY: ${IMMICH_API_KEY}
       HOMEPAGE_VAR_BESZEL_PASSWORD: ${BESZEL_PASSWORD}
       HOMEPAGE_VAR_PIHOLE_PASSWORD: ${PIHOLE_PASSWORD}
@@ -22,3 +22,4 @@ services:
       HOMEPAGE_VAR_SABNZBD_API_KEY: ${SABNZBD_API_KEY}
       HOMEPAGE_VAR_BAZARR_API_KEY: ${BAZARR_API_KEY}
       HOMEPAGE_VAR_MEALIE_API_KEY: ${MEALIE_API_KEY}
+      HOMEPAGE_VAR_HASS_TOKEN: ${HASS_TOKEN}

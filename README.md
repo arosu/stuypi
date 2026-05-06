@@ -57,7 +57,7 @@ Caddy reverse-proxies a curated set of services onto subdomains under `*.alexand
 
 | URL | Backend |
 |---|---|
-| `home.alexandrurosu.com` | homepage `:3000` |
+| `stuypi.alexandrurosu.com` | homepage `:3000` |
 | `watch.alexandrurosu.com` | plex `:32400` |
 | `photos.alexandrurosu.com` | immich `:2283` |
 | `status.alexandrurosu.com` | uptime-kuma `:3001/status/stuypi` (auto-redirects from `/`) |
@@ -65,6 +65,7 @@ Caddy reverse-proxies a curated set of services onto subdomains under `*.alexand
 | `speedtest.alexandrurosu.com` | speedtest-tracker `:8080` |
 | `pihole.alexandrurosu.com` | pi-hole `:8083/admin` (auto-redirects from `/`) |
 | `recipes.alexandrurosu.com` | mealie `:9925` |
+| `home.alexandrurosu.com` | home-assistant `:8123` |
 
 The arr-stack apps (sonarr/radarr/prowlarr/sabnzbd/bazarr) are intentionally **not** behind Caddy — kept on direct ports as a privacy/attack-surface decision.
 
@@ -76,9 +77,11 @@ Without that, `*.alexandrurosu.com` won't resolve on that device.
 
 **Pi-hole port note.** Pi-hole's web admin used to live on `:80/:443` but was moved to `:8083` so Caddy could take over `:80`. DNS (port 53) is unchanged. The change is in `/etc/pihole/pihole.toml` under `[webserver].port` (also requires `pihole-FTL.service` restart).
 
-#### Phase 2 — switch to HTTPS (TODO when domain transfer to Cloudflare completes)
+#### Phase 2 — HTTPS via Cloudflare DNS-01 (done)
 
-The current Caddy setup is **HTTP-only** as a placeholder. Phase 2 swaps in real HTTPS via Let's Encrypt's DNS-01 challenge so every URL becomes `https://...` with a green padlock and no cert warnings (works for Plex/Immich/etc. mobile apps too). DNS-01 is the right approach because it doesn't require exposing any public port — Caddy proves domain ownership by writing a TXT record via the Cloudflare API.
+Every URL is now `https://...` with valid Let's Encrypt certs. Caddy auto-redirects HTTP → HTTPS. Renewal is automatic — Caddy reissues at ~60 days for each per-subdomain cert (90-day Let's Encrypt expiry).
+
+Reference for re-doing this from scratch (e.g. after Scenario A recovery):
 
 **Prerequisites:**
 
@@ -125,7 +128,7 @@ The current Caddy setup is **HTTP-only** as a placeholder. Phase 2 swaps in real
        }
    }
 
-   home.alexandrurosu.com {
+   stuypi.alexandrurosu.com {
        import cf_tls
        reverse_proxy localhost:3000
    }
@@ -224,11 +227,11 @@ This is the most common Pi failure mode. SSD data including all media, photos, a
 13. **Install Pi-hole.** Run the standard installer (`curl -sSL https://install.pi-hole.net | bash`). Once installed, **move the web admin off `:80`** so Caddy can take it: edit `/etc/pihole/pihole.toml`, find `[webserver].port`, change to `port = "8083o,[::]:8083o"`, then `sudo systemctl restart pihole-FTL`. Set Pi-hole admin password (push to `PIHOLE_PASSWORD` in `.env`).
 14. **Add Pi-hole local DNS overrides** for the 7 reverse-proxied subdomains. In `/etc/pihole/pihole.toml` find `[dns].hosts = []` and replace with:
     ```toml
-    hosts = ["16.242.6.136 home.alexandrurosu.com", "16.242.6.136 watch.alexandrurosu.com", "16.242.6.136 photos.alexandrurosu.com", "16.242.6.136 status.alexandrurosu.com", "16.242.6.136 metrics.alexandrurosu.com", "16.242.6.136 speedtest.alexandrurosu.com", "16.242.6.136 pihole.alexandrurosu.com"]
+    hosts = ["16.242.6.136 stuypi.alexandrurosu.com", "16.242.6.136 watch.alexandrurosu.com", "16.242.6.136 photos.alexandrurosu.com", "16.242.6.136 status.alexandrurosu.com", "16.242.6.136 metrics.alexandrurosu.com", "16.242.6.136 speedtest.alexandrurosu.com", "16.242.6.136 pihole.alexandrurosu.com"]
     ```
     Then `sudo systemctl restart pihole-FTL`.
 15. **Bring up Caddy:** `cd ~/stuypi-services/caddy && docker compose up -d`. Caddyfile is committed so this Just Works (Phase 1 / HTTP-only). For Phase 2 / HTTPS, also restore `CLOUDFLARE_API_TOKEN` to `.env`, re-do the Phase 2 build steps from the section above.
-16. **Verify:** `curl -sI -H "Host: home.alexandrurosu.com" http://localhost/` should return 200. From a client on LAN/WG, `http://home.alexandrurosu.com` should load homepage.
+16. **Verify:** `curl -sI -H "Host: stuypi.alexandrurosu.com" http://localhost/` should return 200. From a client on LAN/WG, `http://stuypi.alexandrurosu.com` should load homepage.
 
 **Total recovery time:** ~1–2 hours, mostly wall-clock time waiting for image pulls and Plex's library scan.
 

@@ -1,0 +1,126 @@
+- id: '1778101450803'
+  alias: Good Evening at Sunset
+  description: Run Good Evening if couch or hallway is on at sunset
+  triggers:
+  - trigger: sun
+    event: sunset
+    offset: -00:30:00
+  conditions:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: light.couch
+      state: 'on'
+    - condition: state
+      entity_id: light.hallway
+      state: 'on'
+  actions:
+  - action: script.good_evening
+  mode: single
+- id: '1778102183758'
+  alias: Main Switch turn on/off everything
+  description: ''
+  triggers:
+  - device_id: ddaf15587de09778ed684181c576fdcc
+    domain: hue
+    type: initial_press
+    subtype: 1
+    unique_id: 1645b2dc-5b54-49e5-9dc6-9b8a17d9c2cc
+    trigger: device
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: "{{ states.light | selectattr('state', 'eq', 'on') | list
+          | count > 0\n   or states.media_player | selectattr('state', 'in', ['playing','paused','on','idle'])
+          | list | count > 0 }}\n"
+      sequence:
+      - action: light.turn_off
+        target:
+          entity_id:
+          - light.ac
+          - light.couch
+          - light.fan
+          - light.hallway
+          - light.lamp
+          - light.nightstand
+          - light.towel_heater
+        data:
+          transition: 3
+      - action: media_player.turn_off
+        target:
+          entity_id:
+          - media_player.5e_pod
+          - media_player.living_room
+    - conditions:
+      - condition: sun
+        after: sunset
+      sequence:
+      - action: script.good_evening
+    default:
+    - action: script.good_morning
+  mode: single
+- id: '1778103900001'
+  alias: Low Battery Alert
+  description: Discord notif when any device's battery drops below 20%
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.main_switch_battery
+    - sensor.office_switch_battery
+    below: 10
+    for:
+      minutes: 10
+  conditions: []
+  actions:
+  - action: rest_command.discord_notify
+    data:
+      message: "\U0001F50B **{{ trigger.to_state.attributes.friendly_name or trigger.entity_id
+        }}** battery dropped to {{ trigger.to_state.state }}%"
+  mode: parallel
+- id: '1778104210971'
+  alias: Main Switch dim couch and hallway
+  description: Up/down buttons on the main switch adjust couch+hallway by ±10%
+  triggers:
+  - device_id: ddaf15587de09778ed684181c576fdcc
+    domain: hue
+    type: initial_press
+    subtype: 2
+    trigger: device
+    id: up
+  - device_id: ddaf15587de09778ed684181c576fdcc
+    domain: hue
+    type: initial_press
+    subtype: 3
+    trigger: device
+    id: down
+  conditions: []
+  actions:
+  - action: light.turn_on
+    target:
+      entity_id:
+      - light.couch
+      - light.hallway
+    data:
+      brightness_step_pct: '{{ 10 if trigger.id == ''up'' else -10 }}'
+  mode: parallel
+- id: '1778105277212'
+  alias: HomeKit buttons → scripts
+  description: Bridge input_button presses to the matching script
+  triggers:
+  - trigger: state
+    entity_id: input_button.good_night
+    id: night
+  - trigger: state
+    entity_id: input_button.good_evening
+    id: evening
+  - trigger: state
+    entity_id: input_button.good_morning
+    id: morning
+  conditions: []
+  actions:
+  - action: script.turn_on
+    target:
+      entity_id: script.good_{{ trigger.id }}
+  mode: parallel

@@ -1,0 +1,53 @@
+good_night:
+  sequence:
+  - action: light.turn_off
+    target:
+      entity_id:
+      - light.couch
+      - light.hallway
+      - light.lamp
+      - light.nightstand
+      - light.towel_heater
+    data:
+      transition: 3
+  - action: light.turn_on
+    target:
+      entity_id:
+      - light.fan
+      - light.ac
+  - action: media_player.turn_off
+    target:
+      entity_id:
+      - media_player.5e_pod
+      - media_player.living_room
+  alias: Good Night
+  description: ''
+good_morning:
+  sequence:
+  - action: light.turn_off
+    target:
+      entity_id:
+      - light.ac
+      - light.fan
+      - light.lamp
+      - light.nightstand
+      - light.towel_heater
+    data:
+      transition: 3
+  - action: light.turn_on
+    target:
+      entity_id:
+      - light.couch
+      - light.hallway
+  alias: Good Morning
+  description: ''
+good_evening:
+  sequence:
+  - action: light.turn_on
+    target:
+      entity_id:
+      - light.couch
+      - light.hallway
+      - light.lamp
+  alias: Good Evening
+  description: ''

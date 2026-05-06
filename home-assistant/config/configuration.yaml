@@ -1,0 +1,75 @@
+default_config:
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 127.0.0.1
+    - ::1
+    - 172.16.0.0/12
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+rest_command:
+  discord_notify:
+    url: !secret discord_webhook_url
+    method: POST
+    headers:
+      Content-Type: "application/json"
+    payload: '{"content": "{{ message }}"}'
+    content_type: "application/json; charset=utf-8"
+template:
+  - fan:
+      - name: Fan
+        default_entity_id: fan.fan
+        state: "{{ states('light.fan') }}"
+        turn_on:
+          - action: light.turn_on
+            target:
+              entity_id:
+                - light.fan
+        turn_off:
+          - action: light.turn_off
+            target:
+              entity_id:
+                - light.fan
+      - name: AC
+        default_entity_id: fan.ac
+        state: "{{ states('light.ac') }}"
+        turn_on:
+          - action: light.turn_on
+            target:
+              entity_id:
+                - light.ac
+        turn_off:
+          - action: light.turn_off
+            target:
+              entity_id:
+                - light.ac
+    switch:
+      - name: Towel Heater
+        default_entity_id: switch.towel_heater
+        state: "{{ states('light.towel_heater') }}"
+        turn_on:
+          - action: light.turn_on
+            target:
+              entity_id:
+                - light.towel_heater
+        turn_off:
+          - action: light.turn_off
+            target:
+              entity_id:
+                - light.towel_heater
+    sensor:
+      - name: >
+          {% if is_state('sun.sun', 'above_horizon') %}Sunset{% else %}Sunrise{% endif %}
+
+        unique_id: next_sun_event
+        default_entity_id: sensor.next_sun_event
+        state: >
+          {% set t = state_attr('sun.sun', 'next_setting' if is_state('sun.sun', 'above_horizon') else 'next_rising') %} {{ (t | as_datetime | as_local).strftime('%-I:%M %p') }}
+
+        icon: >-
+          {% if is_state('sun.sun', 'above_horizon') %}
+            mdi:weather-sunset-down
+          {% else %}
+            mdi:weather-sunset-up
+          {% endif %}
