@@ -27,7 +27,8 @@ Secrets are kept in `~/stuypi-services/.env` (gitignored). Service-specific runt
 | **beszel** | `:8090` | Host metrics + alerting | `beszel/beszel_*_data/` (gitignored) |
 | **uptime-kuma** | `:3001` | Service uptime monitor + status page | `uptime-kuma/data/kuma.db` (gitignored) |
 | **speedtest-tracker** | `:8080` | Periodic ISP speed checks | `speedtest-tracker/config/` (gitignored) |
-| **pi-hole** | `:80` (`/admin`) | Network-wide DNS adblocker | (runs outside docker on host or separate compose) |
+| **pi-hole** | `:53` (DNS), `:8083` (`/admin`) | Network-wide DNS adblocker + LAN-only DNS overrides | native install on host (systemd `pihole-FTL.service`); config at `/etc/pihole/` |
+| **caddy** | `:80` (HTTP), Phase 2: `:443` (HTTPS) | Reverse proxy — clean subdomain URLs over LAN/WireGuard | `caddy/Caddyfile` (committable), `caddy/data/` (certs, gitignored once Phase 2 is on) |
 
 ### arr-stack components
 
@@ -48,6 +49,104 @@ All five auth via Forms login. All five send Discord webhook notifications (conf
 - Plex's libraries point at `/mnt/ssd/media-library/movies` and `/mnt/ssd/media-library/tv-shows`. Radarr/Sonarr write into those exact paths. **Don't rename them** — Plex will lose its library if you do.
 - SABnzbd downloads to `/mnt/ssd/usenet/{incomplete,complete}/`; Radarr/Sonarr **hardlink** files from there into the media library (verified — same ext4 mount, `copyUsingHardlinks: true`).
 
+### Reverse proxy + clean URLs
+
+Caddy reverse-proxies a curated set of services onto subdomains under `*.alexandrurosu.com`. Resolution is LAN-only (Pi-hole serves DNS overrides; nothing is exposed publicly).
+
+| URL | Backend |
+|---|---|
+| `home.alexandrurosu.com` | homepage `:3000` |
+| `watch.alexandrurosu.com` | plex `:32400` |
+| `photos.alexandrurosu.com` | immich `:2283` |
+| `status.alexandrurosu.com` | uptime-kuma `:3001/status/stuypi` (auto-redirects from `/`) |
+| `metrics.alexandrurosu.com` | beszel `:8090` |
+| `speedtest.alexandrurosu.com` | speedtest-tracker `:8080` |
+| `pihole.alexandrurosu.com` | pi-hole `:8083/admin` (auto-redirects from `/`) |
+
+The arr-stack apps (sonarr/radarr/prowlarr/sabnzbd/bazarr) are intentionally **not** behind Caddy — kept on direct ports as a privacy/attack-surface decision.
+
+**Required for client devices to reach these URLs:** they must use the Pi (`16.242.6.136`) as their DNS server. Configured via:
+- LAN: router DHCP advertises Pi as primary DNS (already done for Pi-hole ad-blocking).
+- WireGuard: `[Interface]` block in client config has `DNS = 16.242.6.136`.
+
+Without that, `*.alexandrurosu.com` won't resolve on that device.
+
+**Pi-hole port note.** Pi-hole's web admin used to live on `:80/:443` but was moved to `:8083` so Caddy could take over `:80`. DNS (port 53) is unchanged. The change is in `/etc/pihole/pihole.toml` under `[webserver].port` (also requires `pihole-FTL.service` restart).
+
+#### Phase 2 — switch to HTTPS (TODO when domain transfer to Cloudflare completes)
+
+The current Caddy setup is **HTTP-only** as a placeholder. Phase 2 swaps in real HTTPS via Let's Encrypt's DNS-01 challenge so every URL becomes `https://...` with a green padlock and no cert warnings (works for Plex/Immich/etc. mobile apps too). DNS-01 is the right approach because it doesn't require exposing any public port — Caddy proves domain ownership by writing a TXT record via the Cloudflare API.
+
+**Prerequisites:**
+
+1. **Domain transfer to Cloudflare must be complete** (`alexandrurosu.com` showing in your Cloudflare dashboard with NS records pointing at Cloudflare's nameservers).
+2. **Cloudflare API token** with the minimum scope to manage DNS records on this zone:
+   - Cloudflare dashboard → My Profile → API Tokens → Create Token → "Edit zone DNS" template.
+   - Permissions: `Zone:DNS:Edit`. Zone resources: `Include → Specific zone → alexandrurosu.com`.
+   - Copy the token (Cloudflare only shows it once).
+
+**Steps when ready:**
+
+1. **Add the token to `.env`** (gitignored):
+   ```sh
+   export CLOUDFLARE_API_TOKEN="<token>"
+   ```
+   Also add the same line (with empty value) to `.env.example`.
+
+2. **Rebuild Caddy with the Cloudflare DNS plugin** (the stock `caddy:2-alpine` image doesn't include it). Replace `caddy/docker-compose.yaml`'s `image:` with a `build:` block, and add a `caddy/Dockerfile`:
+   ```dockerfile
+   FROM caddy:2-builder AS builder
+   RUN xcaddy build --with github.com/caddy-dns/cloudflare
+   FROM caddy:2-alpine
+   COPY --from=builder /usr/bin/caddy /usr/bin/caddy
+   ```
+   And in `caddy/docker-compose.yaml`:
+   ```yaml
+   services:
+     caddy:
+       build: .
+       environment:
+         CF_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
+       # rest unchanged
+   ```
+
+3. **Update `caddy/Caddyfile`** — drop the `auto_https off`, drop the `:80` from each site block, add a global `tls` block that uses Cloudflare DNS:
+   ```caddy
+   {
+       email <your-email-for-letsencrypt>
+   }
+
+   (cf_tls) {
+       tls {
+           dns cloudflare {env.CF_API_TOKEN}
+       }
+   }
+
+   home.alexandrurosu.com {
+       import cf_tls
+       reverse_proxy localhost:3000
+   }
+   # …same pattern for the other 6 subdomains
+   ```
+
+4. **Bring up the rebuilt Caddy:**
+   ```sh
+   cd ~/stuypi-services/caddy
+   source ~/stuypi-services/.env
+   docker compose up -d --build
+   ```
+   Caddy will request a wildcard cert (`*.alexandrurosu.com`) — Let's Encrypt fires off a DNS challenge → Caddy uses the API token to write/delete a TXT record under `alexandrurosu.com` → cert issued in ~30 seconds.
+
+5. **Update `caddy/.gitignore` (or root `.gitignore`)** to skip `caddy/data/` and `caddy/config/` since they'll now contain certificates and account keys.
+
+6. **Update homepage `services.yaml`** — change all `http://*.alexandrurosu.com` hrefs to `https://`. Update `widget.url` for Pi-hole too if needed.
+
+7. **Update Beszel `APP_URL`** → `https://metrics.alexandrurosu.com`.
+
+8. **Plex specifically** — once HTTPS is live, add `https://watch.alexandrurosu.com` to Plex → Settings → Network → "Custom server access URLs" so the Plex apps treat it as canonical.
+
+**Renewal is automatic.** Caddy stores the cert in `caddy/data/`; Let's Encrypt certs expire every 90 days, Caddy re-issues at ~60 days with no intervention.
+
 ### Secrets in `.env`
 
 `~/stuypi-services/.env` (gitignored, sourced by Docker before each `docker compose up`) holds:
@@ -60,6 +159,10 @@ All five auth via Forms login. All five send Discord webhook notifications (conf
 | `PLEX_TOKEN` | homepage widget + Radarr/Sonarr Plex Watchlist + Plex notifier | Plex → Settings → Account → "X-Plex-Token" |
 | `SPEEDTEST_TRACKER_*` | homepage widget | Speedtest Tracker → Settings → API |
 | `SONARR_API_KEY`, `RADARR_API_KEY`, `PROWLARR_API_KEY`, `SABNZBD_API_KEY`, `BAZARR_API_KEY` | homepage widgets | each app → Settings → General/Auth |
+| `BESZEL_AGENT_TOKEN` | beszel agent auth to hub | Beszel UI → Systems → Add System (or rotate via the existing system's settings) |
+| `RCLONE_DISCORD_WEBHOOK_URL` | `bin/rclone_discord.py` (Backblaze sync notifier) | Discord channel → Edit → Integrations → Webhooks |
+| `KUMA_PUSH_URL_BACKBLAZE` | same script, for the "Backblaze Sync" push monitor | Uptime Kuma → edit "Backblaze Sync" monitor → copy push URL |
+| `CLOUDFLARE_API_TOKEN` | Caddy (Phase 2 only) — DNS-01 cert issuance | Cloudflare dashboard → My Profile → API Tokens → "Edit zone DNS" |
 
 Plus secrets that live **only** inside each app's gitignored config dir (not in `.env`):
 
@@ -112,7 +215,15 @@ This is the most common Pi failure mode. SSD data including all media, photos, a
 9. **Bring up Plex:** `cd ~/stuypi-services/plex && docker compose up -d`. Plex will need to re-scan and re-claim. Sign in with your Plex account; libraries pointing at `/mnt/ssd/media-library/{movies,tv-shows}` will repopulate from the on-disk files. Watch progress and metadata is preserved if your Plex account had server sync enabled (default).
 10. **Bring up arr-stack:** `cd ~/stuypi-services/arr-stack && docker compose up -d`. **All five apps will start fresh with no config.** See [Reconfiguring arr-stack from scratch](#reconfiguring-arr-stack-from-scratch) below — this is the longest part of the recovery (15–30 minutes).
 11. **Reconfigure Uptime Kuma:** create user, re-add the 13 monitors and 1 status page (5 min via UI; faster via DB SQL if you keep a snapshot).
-12. **Reconfigure Beszel:** add the `stuypi` host as a system, install agent.
+12. **Reconfigure Beszel:** add the `stuypi` host as a system, install agent. Copy the new `BESZEL_AGENT_TOKEN` into `.env`.
+13. **Install Pi-hole.** Run the standard installer (`curl -sSL https://install.pi-hole.net | bash`). Once installed, **move the web admin off `:80`** so Caddy can take it: edit `/etc/pihole/pihole.toml`, find `[webserver].port`, change to `port = "8083o,[::]:8083o"`, then `sudo systemctl restart pihole-FTL`. Set Pi-hole admin password (push to `PIHOLE_PASSWORD` in `.env`).
+14. **Add Pi-hole local DNS overrides** for the 7 reverse-proxied subdomains. In `/etc/pihole/pihole.toml` find `[dns].hosts = []` and replace with:
+    ```toml
+    hosts = ["16.242.6.136 home.alexandrurosu.com", "16.242.6.136 watch.alexandrurosu.com", "16.242.6.136 photos.alexandrurosu.com", "16.242.6.136 status.alexandrurosu.com", "16.242.6.136 metrics.alexandrurosu.com", "16.242.6.136 speedtest.alexandrurosu.com", "16.242.6.136 pihole.alexandrurosu.com"]
+    ```
+    Then `sudo systemctl restart pihole-FTL`.
+15. **Bring up Caddy:** `cd ~/stuypi-services/caddy && docker compose up -d`. Caddyfile is committed so this Just Works (Phase 1 / HTTP-only). For Phase 2 / HTTPS, also restore `CLOUDFLARE_API_TOKEN` to `.env`, re-do the Phase 2 build steps from the section above.
+16. **Verify:** `curl -sI -H "Host: home.alexandrurosu.com" http://localhost/` should return 200. From a client on LAN/WG, `http://home.alexandrurosu.com` should load homepage.
 
 **Total recovery time:** ~1–2 hours, mostly wall-clock time waiting for image pulls and Plex's library scan.
 
