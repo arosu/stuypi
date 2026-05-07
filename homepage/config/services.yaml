@@ -8,6 +8,7 @@
           type: homeassistant
           url: http://16.242.6.136:8123
           key: "{{HOMEPAGE_VAR_HASS_TOKEN}}"
+          fields: ["lights_on", "switches_on"]
     - Immich:
         icon: immich.png
         href: https://photos.alexandrurosu.com
