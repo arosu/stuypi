@@ -12,7 +12,8 @@ PAIRS=(
   "/mnt/ssd/files/arosu:alex-file-backups"
   "/mnt/ssd/photo-library/library/iclotea:ioana-photo-backups"
   "/mnt/ssd/files/iclotea:ioana-file-backups"
-  "/mnt/ssd/recipes/backups:rosu-recipes-backup"
+  "/mnt/ssd/kitchenowl/backups:rosu-recipes-backup/dumps"
+  "/mnt/ssd/kitchenowl/upload:rosu-recipes-backup/uploads"
 )
 
 # Get current timestamp

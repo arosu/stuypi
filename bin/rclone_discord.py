@@ -21,6 +21,8 @@ if os.path.isfile(ENV_FILE):
 WEBHOOK_URL = os.environ["RCLONE_DISCORD_WEBHOOK_URL"]
 KUMA_PUSH_URL = os.environ["KUMA_PUSH_URL_BACKBLAZE"]
 LOG_DIR = "/home/arosu/logs/backblaze-rclone-sync/"
+KITCHENOWL_BACKUPS_DIR = "/mnt/ssd/kitchenowl/backups"
+KITCHENOWL_MAX_DUMP_AGE_DAYS = 7
 
 
 def send_to_discord(title: str, fields: str, color: int) -> None:
@@ -47,6 +49,16 @@ def push_kuma(status: str, msg: str) -> None:
         )
     except requests.RequestException:
         pass
+
+
+def latest_kitchenowl_dump_age_days():
+    files = glob.glob(
+        os.path.join(KITCHENOWL_BACKUPS_DIR, "kitchenowl-recipes-*.json.gz")
+    )
+    if not files:
+        return None
+    newest_mtime = max(os.path.getmtime(f) for f in files)
+    return (datetime.now().timestamp() - newest_mtime) / 86400
 
 
 def main():
@@ -86,10 +98,22 @@ def main():
 
     if has_errors:
         push_kuma("down", f"rclone errors detected: {latest_file}")
-    else:
-        if total_changes > 0:
-            send_to_discord("✅ Sync Successful", embed_fields, 3066993)
-        push_kuma("up", "OK")
+        return
+
+    age = latest_kitchenowl_dump_age_days()
+    if age is None:
+        push_kuma("down", "no kitchenowl dumps found")
+        return
+    if age > KITCHENOWL_MAX_DUMP_AGE_DAYS:
+        push_kuma(
+            "down",
+            f"kitchenowl dump is {age:.1f}d old (>{KITCHENOWL_MAX_DUMP_AGE_DAYS}d)",
+        )
+        return
+
+    if total_changes > 0:
+        send_to_discord("✅ Sync Successful", embed_fields, 3066993)
+    push_kuma("up", "OK")
 
 
 if __name__ == "__main__":

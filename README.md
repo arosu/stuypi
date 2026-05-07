@@ -9,7 +9,7 @@ Self-hosted services running on a Raspberry Pi (host: `16.242.6.136`, hostname: 
   ├── photo-library/               (Immich photo blobs; backed up to Backblaze)
   ├── immich-database/             (Immich Postgres data dir)
   ├── media-library/{movies,tv-shows}  (Plex content; rebuildable from arr-stack)
-  ├── recipes/                     (Mealie data dir; backups/ subfolder synced to Backblaze)
+  ├── kitchenowl/                  (KitchenOwl SQLite DB; `backups/` and `upload/` subfolders synced to Backblaze under `rosu-recipes-backup/{dumps,uploads}/`)
   └── usenet/{incomplete,complete}     (SABnzbd workspace; ephemeral)
 ```
 
@@ -30,7 +30,7 @@ Secrets are kept in `~/stuypi-services/.env` (gitignored). Service-specific runt
 | **speedtest-tracker** | `:8080` | Periodic ISP speed checks | `speedtest-tracker/config/` (gitignored) |
 | **pi-hole** | `:53` (DNS), `:8083` (`/admin`) | Network-wide DNS adblocker + LAN-only DNS overrides | native install on host (systemd `pihole-FTL.service`); config at `/etc/pihole/` |
 | **caddy** | `:80` (HTTP), Phase 2: `:443` (HTTPS) | Reverse proxy — clean subdomain URLs over LAN/WireGuard | `caddy/Caddyfile` (committable), `caddy/data/` (certs, gitignored once Phase 2 is on) |
-| **mealie** | `:9925` | Self-hosted recipe library | `/mnt/ssd/recipes/` (SQLite + recipe images/assets + scheduled backup ZIPs) |
+| **kitchenowl** | `:9926` (web), `:9927` (stats sidecar) | Shared shopping list + recipe planning | `/mnt/ssd/kitchenowl/` (live SQLite DB at root; weekly gzipped JSON dumps in `backups/` and recipe images in `upload/` both synced to B2 bucket `rosu-recipes-backup`) |
 
 ### arr-stack components
 
@@ -64,8 +64,8 @@ Caddy reverse-proxies a curated set of services onto subdomains under `*.alexand
 | `metrics.alexandrurosu.com` | beszel `:8090` |
 | `speedtest.alexandrurosu.com` | speedtest-tracker `:8080` |
 | `pihole.alexandrurosu.com` | pi-hole `:8083/admin` (auto-redirects from `/`) |
-| `recipes.alexandrurosu.com` | mealie `:9925` |
 | `home.alexandrurosu.com` | home-assistant `:8123` |
+| `kitchen.alexandrurosu.com` | kitchenowl `:9926` |
 
 The arr-stack apps (sonarr/radarr/prowlarr/sabnzbd/bazarr) are intentionally **not** behind Caddy — kept on direct ports as a privacy/attack-surface decision.
 
@@ -165,8 +165,9 @@ Reference for re-doing this from scratch (e.g. after Scenario A recovery):
 | `PLEX_TOKEN` | homepage widget + Radarr/Sonarr Plex Watchlist + Plex notifier | Plex → Settings → Account → "X-Plex-Token" |
 | `SPEEDTEST_TRACKER_*` | homepage widget | Speedtest Tracker → Settings → API |
 | `SONARR_API_KEY`, `RADARR_API_KEY`, `PROWLARR_API_KEY`, `SABNZBD_API_KEY`, `BAZARR_API_KEY` | homepage widgets | each app → Settings → General/Auth |
-| `MEALIE_API_KEY` | homepage widget | Mealie → User Settings → API Tokens → Generate |
 | `BESZEL_AGENT_TOKEN` | beszel agent auth to hub | Beszel UI → Systems → Add System (or rotate via the existing system's settings) |
+| `KITCHENOWL_JWT_SECRET` | kitchenowl backend — signs JWTs | random 64-hex (`openssl rand -hex 32`); rotating logs everyone out |
+| `KITCHENOWL_TOKEN` | `kitchenowl-stats` sidecar / homepage widget | KitchenOwl → Settings → Long-Lived Tokens (or `POST /api/auth` with username/password) |
 | `RCLONE_DISCORD_WEBHOOK_URL` | `bin/rclone_discord.py` (Backblaze sync notifier) | Discord channel → Edit → Integrations → Webhooks |
 | `KUMA_PUSH_URL_BACKBLAZE` | same script, for the "Backblaze Sync" push monitor | Uptime Kuma → edit "Backblaze Sync" monitor → copy push URL |
 | `CLOUDFLARE_API_TOKEN` | Caddy (Phase 2 only) — DNS-01 cert issuance | Cloudflare dashboard → My Profile → API Tokens → "Edit zone DNS" |
@@ -221,13 +222,13 @@ This is the most common Pi failure mode. SSD data including all media, photos, a
 8. **Bring up Immich:** `cd ~/stuypi-services/immich && docker compose up -d`. Postgres data at `/mnt/ssd/immich-database/` is intact, so albums and metadata return as-is. Photos at `/mnt/ssd/photo-library/` likewise.
 9. **Bring up Plex:** `cd ~/stuypi-services/plex && docker compose up -d`. Plex will need to re-scan and re-claim. Sign in with your Plex account; libraries pointing at `/mnt/ssd/media-library/{movies,tv-shows}` will repopulate from the on-disk files. Watch progress and metadata is preserved if your Plex account had server sync enabled (default).
 10. **Bring up arr-stack:** `cd ~/stuypi-services/arr-stack && docker compose up -d`. **All five apps will start fresh with no config.** See [Reconfiguring arr-stack from scratch](#reconfiguring-arr-stack-from-scratch) below — this is the longest part of the recovery (15–30 minutes).
-10b. **Bring up Mealie:** `cd ~/stuypi-services/mealie && docker compose up -d`. Data dir at `/mnt/ssd/recipes/` is intact, so all recipes/images/assets come back automatically. No reconfiguration needed.
+10b. **Bring up KitchenOwl:** `cd ~/stuypi-services/kitchenowl && docker compose up -d`. Data dir at `/mnt/ssd/kitchenowl/` is intact, so accounts, recipes, and shopping lists return as-is. Both the main app and the `kitchenowl-stats` sidecar require `KITCHENOWL_JWT_SECRET` and `KITCHENOWL_TOKEN` in `.env` — if those values changed, all sessions invalidate and the homepage widget breaks until refreshed.
 11. **Reconfigure Uptime Kuma:** create user, re-add the 13 monitors and 1 status page (5 min via UI; faster via DB SQL if you keep a snapshot).
 12. **Reconfigure Beszel:** add the `stuypi` host as a system, install agent. Copy the new `BESZEL_AGENT_TOKEN` into `.env`.
 13. **Install Pi-hole.** Run the standard installer (`curl -sSL https://install.pi-hole.net | bash`). Once installed, **move the web admin off `:80`** so Caddy can take it: edit `/etc/pihole/pihole.toml`, find `[webserver].port`, change to `port = "8083o,[::]:8083o"`, then `sudo systemctl restart pihole-FTL`. Set Pi-hole admin password (push to `PIHOLE_PASSWORD` in `.env`).
-14. **Add Pi-hole local DNS overrides** for the 7 reverse-proxied subdomains. In `/etc/pihole/pihole.toml` find `[dns].hosts = []` and replace with:
+14. **Add Pi-hole local DNS overrides** for the 9 reverse-proxied subdomains. In `/etc/pihole/pihole.toml` find `[dns].hosts = []` and replace with:
     ```toml
-    hosts = ["16.242.6.136 stuypi.alexandrurosu.com", "16.242.6.136 watch.alexandrurosu.com", "16.242.6.136 photos.alexandrurosu.com", "16.242.6.136 status.alexandrurosu.com", "16.242.6.136 metrics.alexandrurosu.com", "16.242.6.136 speedtest.alexandrurosu.com", "16.242.6.136 pihole.alexandrurosu.com"]
+    hosts = ["16.242.6.136 stuypi.alexandrurosu.com", "16.242.6.136 watch.alexandrurosu.com", "16.242.6.136 photos.alexandrurosu.com", "16.242.6.136 status.alexandrurosu.com", "16.242.6.136 metrics.alexandrurosu.com", "16.242.6.136 speedtest.alexandrurosu.com", "16.242.6.136 pihole.alexandrurosu.com", "16.242.6.136 home.alexandrurosu.com", "16.242.6.136 kitchen.alexandrurosu.com"]
     ```
     Then `sudo systemctl restart pihole-FTL`.
 15. **Bring up Caddy:** `cd ~/stuypi-services/caddy && docker compose up -d`. Caddyfile is committed so this Just Works (Phase 1 / HTTP-only). For Phase 2 / HTTPS, also restore `CLOUDFLARE_API_TOKEN` to `.env`, re-do the Phase 2 build steps from the section above.
@@ -246,18 +247,19 @@ Worst case — Plex content, photos, Immich database, and all service `config/` 
 **Steps:**
 
 1. **Replace the SSD.** Format ext4, mount at `/mnt/ssd`.
-2. **Recreate top-level dirs:** `mkdir -p /mnt/ssd/{files,photo-library,immich-database,media-library/{movies,tv-shows},recipes/backups,usenet/{incomplete,complete}}`. Match ownership (`arosu:arosu`).
+2. **Recreate top-level dirs:** `mkdir -p /mnt/ssd/{files,photo-library,immich-database,media-library/{movies,tv-shows},kitchenowl,usenet/{incomplete,complete}}`. Match ownership (`arosu:arosu`).
 3. **Restore from Backblaze** for files, photos, and recipe backups:
    ```sh
    rclone copy backblaze:alex-photo-backups   /mnt/ssd/photo-library/library/admin
    rclone copy backblaze:ioana-photo-backups  /mnt/ssd/photo-library/library/iclotea
    rclone copy backblaze:alex-file-backups    /mnt/ssd/files/arosu
-   rclone copy backblaze:ioana-file-backups   /mnt/ssd/files/iclotea
-   rclone copy backblaze:rosu-recipes-backup  /mnt/ssd/recipes/backups
+   rclone copy backblaze:ioana-file-backups          /mnt/ssd/files/iclotea
+   rclone copy backblaze:rosu-recipes-backup/dumps   /mnt/ssd/kitchenowl/backups
+   rclone copy backblaze:rosu-recipes-backup/uploads /mnt/ssd/kitchenowl/upload
    ```
 4. **Immich database is NOT in Backblaze.** Albums, metadata, and machine-learning indexes are gone. Photos are intact, but Immich will treat them as fresh imports. After Immich is up, point it at `/mnt/ssd/photo-library/` as an external library and let it re-index — slow on a Pi (could take 8–24h) but everything comes back, just unsorted.
 5. **Plex media library is NOT in Backblaze.** Movies/shows must be re-downloaded via Radarr/Sonarr. Both apps remember everything they've ever grabbed (in the gitignored DB which is *also* gone) — so you're starting over.
-6. **Mealie database is NOT in Backblaze** — only the ZIP backups are. After bringing Mealie up against the empty `/mnt/ssd/recipes/` (the `backups/` subfolder will have your synced ZIPs), register a new admin user, then go to **Settings → Backups → Restore from Backup**, pick the latest ZIP, and Mealie repopulates the DB + assets. Should be ~minutes for typical recipe libraries.
+6. **KitchenOwl SQLite DB is NOT in Backblaze** — only the gzipped recipe-export dumps and `upload/` images are. Shopping lists, accounts, expense splits, and household settings are gone. After bringing KitchenOwl up against an empty data dir, sign up again (first user becomes admin), generate a new `KITCHENOWL_TOKEN` for the homepage widget, then re-import recipes by POSTing the latest dump to `/api/household/1/import` (the dump matches `ImportSchema` shape directly). Recipe images come back automatically once `/mnt/ssd/kitchenowl/upload/` is restored. See `bin/kitchenowl-export-recipes.py` for token + endpoint reference.
 7. **Bring services up** in the same order as Scenario A. Reconfigure arr-stack as below. Re-add everything to Plex Watchlist that you want back; Radarr/Sonarr will re-grab.
 
 **Total recovery time:** Backblaze restore + days of Plex media re-downloading.

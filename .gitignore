@@ -33,3 +33,6 @@ home-assistant/config/www/
 .DS_Store
 *.swp
 *.log
+
+# Python
+__pycache__

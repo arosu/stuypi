@@ -55,7 +55,7 @@ pihole.alexandrurosu.com {
     reverse_proxy localhost:8083
 }
 
-recipes.alexandrurosu.com {
+kitchen.alexandrurosu.com {
     import cf_tls
-    reverse_proxy localhost:9925
+    reverse_proxy localhost:9926
 }
