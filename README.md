@@ -22,8 +22,8 @@ Secrets are kept in `~/stuypi-services/.env` (gitignored). Service-specific runt
 | Service | Port | Purpose | State location |
 |---|---|---|---|
 | **homepage** | `:3000` | Dashboard / landing page | `homepage/config/` (mostly committable) |
-| **plex** | `:32400`, `:8766` (redirect) | Media server | `plex/config/` (gitignored) |
-| **immich** | `:2283`, `:8765` (redirect) | Photo backup + albums | `/mnt/ssd/photo-library/`, `/mnt/ssd/immich-database/` |
+| **plex** | `:32400` | Media server | `plex/config/` (gitignored) |
+| **immich** | `:2283` | Photo backup + albums | `/mnt/ssd/photo-library/`, `/mnt/ssd/immich-database/` |
 | **arr-stack** | various (see below) | Automated movie/TV/subtitle pipeline | `arr-stack/config/` (gitignored) |
 | **beszel** | `:8090` | Host metrics + alerting | `beszel/beszel_*_data/` (gitignored) |
 | **uptime-kuma** | `:3001` | Service uptime monitor + status page | `uptime-kuma/data/kuma.db` (gitignored) |
