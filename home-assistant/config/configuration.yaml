@@ -16,6 +16,61 @@ rest_command:
       Content-Type: "application/json"
     payload: '{"content": "{{ message }}"}'
     content_type: "application/json; charset=utf-8"
+rest:
+  - resource: http://localhost:2283/api/server/statistics
+    scan_interval: 600
+    headers:
+      x-api-key: !secret immich_api_key
+      Accept: application/json
+    sensor:
+      - name: Immich Photos
+        unique_id: immich_photos
+        value_template: "{{ value_json.photos }}"
+        state_class: total
+        icon: mdi:image-multiple
+      - name: Immich Videos
+        unique_id: immich_videos
+        value_template: "{{ value_json.videos }}"
+        state_class: total
+        icon: mdi:video
+      - name: Immich Storage
+        unique_id: immich_storage
+        value_template: "{{ (value_json.usage / 1024**3) | round(1) }}"
+        unit_of_measurement: GB
+        state_class: total
+        icon: mdi:database
+      - name: Immich Alex Photos
+        unique_id: immich_alex_photos
+        value_template: "{{ value_json.usageByUser | selectattr('userName', 'eq', 'Alexandru Rosu') | map(attribute='photos') | first }}"
+        state_class: total
+        icon: mdi:image
+      - name: Immich Alex Videos
+        unique_id: immich_alex_videos
+        value_template: "{{ value_json.usageByUser | selectattr('userName', 'eq', 'Alexandru Rosu') | map(attribute='videos') | first }}"
+        state_class: total
+        icon: mdi:video
+      - name: Immich Alex Storage
+        unique_id: immich_alex_storage
+        value_template: "{{ (value_json.usageByUser | selectattr('userName', 'eq', 'Alexandru Rosu') | map(attribute='usage') | first / 1024**3) | round(1) }}"
+        unit_of_measurement: GB
+        state_class: total
+        icon: mdi:database
+      - name: Immich Ioana Photos
+        unique_id: immich_ioana_photos
+        value_template: "{{ value_json.usageByUser | selectattr('userName', 'eq', 'Ioana Clotea') | map(attribute='photos') | first }}"
+        state_class: total
+        icon: mdi:image
+      - name: Immich Ioana Videos
+        unique_id: immich_ioana_videos
+        value_template: "{{ value_json.usageByUser | selectattr('userName', 'eq', 'Ioana Clotea') | map(attribute='videos') | first }}"
+        state_class: total
+        icon: mdi:video
+      - name: Immich Ioana Storage
+        unique_id: immich_ioana_storage
+        value_template: "{{ (value_json.usageByUser | selectattr('userName', 'eq', 'Ioana Clotea') | map(attribute='usage') | first / 1024**3) | round(1) }}"
+        unit_of_measurement: GB
+        state_class: total
+        icon: mdi:database
 template:
   - fan:
       - name: Fan
@@ -73,3 +128,19 @@ template:
           {% else %}
             mdi:weather-sunset-up
           {% endif %}
+      - name: Services Up
+        unique_id: services_up
+        icon: mdi:check-circle
+        state: >
+          {{ states.sensor
+             | selectattr('entity_id', 'match', '.*_status$')
+             | selectattr('state', 'eq', 'up')
+             | list | count }}
+      - name: Services Down
+        unique_id: services_down
+        icon: mdi:alert-circle
+        state: >-
+          {{ states.sensor
+             | selectattr('entity_id', 'match', '.*_status$')
+             | rejectattr('state', 'eq', 'up')
+             | list | count }}
