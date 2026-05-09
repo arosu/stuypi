@@ -27,7 +27,6 @@ Secrets are kept in `~/stuypi-services/.env` (gitignored). Service-specific runt
 | **arr-stack** | various (see below) | Automated movie/TV/subtitle pipeline | `arr-stack/config/` (gitignored) |
 | **beszel** | `:8090` | Host metrics + alerting | `beszel/beszel_*_data/` (gitignored) |
 | **uptime-kuma** | `:3001` | Service uptime monitor + status page | `uptime-kuma/data/kuma.db` (gitignored) |
-| **speedtest-tracker** | `:8080` | Periodic ISP speed checks | `speedtest-tracker/config/` (gitignored) |
 | **pi-hole** | `:53` (DNS), `:8083` (`/admin`) | Network-wide DNS adblocker + LAN-only DNS overrides | native install on host (systemd `pihole-FTL.service`); config at `/etc/pihole/` |
 | **caddy** | `:80` (HTTP), Phase 2: `:443` (HTTPS) | Reverse proxy — clean subdomain URLs over LAN/WireGuard | `caddy/Caddyfile` (committable), `caddy/data/` (certs, gitignored once Phase 2 is on) |
 | **kitchenowl** | `:9926` (web), `:9927` (stats sidecar) | Shared shopping list + recipe planning | `/mnt/ssd/kitchenowl/` (live SQLite DB at root; weekly gzipped JSON dumps in `backups/` and recipe images in `upload/` both synced to B2 bucket `rosu-recipes-backup`) |
@@ -57,12 +56,10 @@ Caddy reverse-proxies a curated set of services onto subdomains under `*.alexand
 
 | URL | Backend |
 |---|---|
-| `stuypi.alexandrurosu.com` | homepage `:3000` |
 | `watch.alexandrurosu.com` | plex `:32400` |
 | `photos.alexandrurosu.com` | immich `:2283` |
 | `status.alexandrurosu.com` | uptime-kuma `:3001/status/stuypi` (auto-redirects from `/`) |
 | `metrics.alexandrurosu.com` | beszel `:8090` |
-| `speedtest.alexandrurosu.com` | speedtest-tracker `:8080` |
 | `pihole.alexandrurosu.com` | pi-hole `:8083/admin` (auto-redirects from `/`) |
 | `home.alexandrurosu.com` | home-assistant `:8123` |
 | `kitchen.alexandrurosu.com` | kitchenowl `:9926` |
@@ -128,7 +125,7 @@ Reference for re-doing this from scratch (e.g. after Scenario A recovery):
        }
    }
 
-   stuypi.alexandrurosu.com {
+   home.alexandrurosu.com {
        import cf_tls
        reverse_proxy localhost:3000
    }
@@ -145,11 +142,9 @@ Reference for re-doing this from scratch (e.g. after Scenario A recovery):
 
 5. **Update `caddy/.gitignore` (or root `.gitignore`)** to skip `caddy/data/` and `caddy/config/` since they'll now contain certificates and account keys.
 
-6. **Update homepage `services.yaml`** — change all `http://*.alexandrurosu.com` hrefs to `https://`. Update `widget.url` for Pi-hole too if needed.
+6. **Update Beszel `APP_URL`** → `https://metrics.alexandrurosu.com`.
 
-7. **Update Beszel `APP_URL`** → `https://metrics.alexandrurosu.com`.
-
-8. **Plex specifically** — once HTTPS is live, add `https://watch.alexandrurosu.com` to Plex → Settings → Network → "Custom server access URLs" so the Plex apps treat it as canonical.
+7. **Plex specifically** — once HTTPS is live, add `https://watch.alexandrurosu.com` to Plex → Settings → Network → "Custom server access URLs" so the Plex apps treat it as canonical.
 
 **Renewal is automatic.** Caddy stores the cert in `caddy/data/`; Let's Encrypt certs expire every 90 days, Caddy re-issues at ~60 days with no intervention.
 
@@ -159,15 +154,10 @@ Reference for re-doing this from scratch (e.g. after Scenario A recovery):
 
 | Variable | Used by | Origin |
 |---|---|---|
-| `IMMICH_API_KEY` | homepage widget | Immich → Account Settings → API Keys |
-| `BESZEL_PASSWORD` | homepage widget | Beszel admin login password |
-| `PIHOLE_PASSWORD` | homepage widget | Pi-hole admin password |
-| `PLEX_TOKEN` | homepage widget + Radarr/Sonarr Plex Watchlist + Plex notifier | Plex → Settings → Account → "X-Plex-Token" |
-| `SPEEDTEST_TRACKER_*` | homepage widget | Speedtest Tracker → Settings → API |
-| `SONARR_API_KEY`, `RADARR_API_KEY`, `PROWLARR_API_KEY`, `SABNZBD_API_KEY`, `BAZARR_API_KEY` | homepage widgets | each app → Settings → General/Auth |
+| `PLEX_TOKEN` | Radarr/Sonarr Plex Watchlist + Plex notifier | Plex → Settings → Account → "X-Plex-Token" |
 | `BESZEL_AGENT_TOKEN` | beszel agent auth to hub | Beszel UI → Systems → Add System (or rotate via the existing system's settings) |
 | `KITCHENOWL_JWT_SECRET` | kitchenowl backend — signs JWTs | random 64-hex (`openssl rand -hex 32`); rotating logs everyone out |
-| `KITCHENOWL_TOKEN` | `kitchenowl-stats` sidecar / homepage widget | KitchenOwl → Settings → Long-Lived Tokens (or `POST /api/auth` with username/password) |
+| `KITCHENOWL_TOKEN` | `kitchenowl-stats` sidecar | KitchenOwl → Settings → Long-Lived Tokens (or `POST /api/auth` with username/password) |
 | `RCLONE_DISCORD_WEBHOOK_URL` | `bin/rclone_discord.py` (Backblaze sync notifier) | Discord channel → Edit → Integrations → Webhooks |
 | `KUMA_PUSH_URL_BACKBLAZE` | same script, for the "Backblaze Sync" push monitor | Uptime Kuma → edit "Backblaze Sync" monitor → copy push URL |
 | `CLOUDFLARE_API_TOKEN` | Caddy (Phase 2 only) — DNS-01 cert issuance | Cloudflare dashboard → My Profile → API Tokens → "Edit zone DNS" |
@@ -190,7 +180,7 @@ If you lose a config dir, you lose all of these. Either keep the original creds 
 
 ### Scenario A: SD card dies (boot disk gone, SSD survives)
 
-This is the most common Pi failure mode. SSD data including all media, photos, and Immich DB is intact. You only need to rebuild the OS + reattach the SSD + re-run `docker compose up` for each service. State for **homepage, plex, immich, beszel, uptime-kuma, speedtest-tracker, arr-stack apps** is gone (it was on the SD), but `/mnt/ssd/...` is fine.
+This is the most common Pi failure mode. SSD data including all media, photos, and Immich DB is intact. You only need to rebuild the OS + reattach the SSD + re-run `docker compose up` for each service. State for **plex, immich, beszel, uptime-kuma, arr-stack apps** is gone (it was on the SD), but `/mnt/ssd/...` is fine.
 
 **Steps:**
 
@@ -210,29 +200,26 @@ This is the most common Pi failure mode. SSD data including all media, photos, a
    ```sh
    cd ~ && git clone <your-git-remote>/stuypi-services.git
    ```
-6. **Restore `.env`** from your password manager / off-site backup. This file is the single biggest blocker — without it, every homepage widget breaks and Radarr/Sonarr lose their Plex Watchlist link.
+6. **Restore `.env`** from your password manager / off-site backup. This file is the single biggest blocker — without it, Radarr/Sonarr lose their Plex Watchlist link.
 7. **Bring up infrastructure first:**
    ```sh
    source ~/stuypi-services/.env
    cd ~/stuypi-services/uptime-kuma && docker compose up -d
    cd ~/stuypi-services/beszel && docker compose up -d
-   cd ~/stuypi-services/speedtest-tracker && docker compose up -d
-   cd ~/stuypi-services/homepage && docker compose up -d
    ```
 8. **Bring up Immich:** `cd ~/stuypi-services/immich && docker compose up -d`. Postgres data at `/mnt/ssd/immich-database/` is intact, so albums and metadata return as-is. Photos at `/mnt/ssd/photo-library/` likewise.
 9. **Bring up Plex:** `cd ~/stuypi-services/plex && docker compose up -d`. Plex will need to re-scan and re-claim. Sign in with your Plex account; libraries pointing at `/mnt/ssd/media-library/{movies,tv-shows}` will repopulate from the on-disk files. Watch progress and metadata is preserved if your Plex account had server sync enabled (default).
 10. **Bring up arr-stack:** `cd ~/stuypi-services/arr-stack && docker compose up -d`. **All five apps will start fresh with no config.** See [Reconfiguring arr-stack from scratch](#reconfiguring-arr-stack-from-scratch) below — this is the longest part of the recovery (15–30 minutes).
-10b. **Bring up KitchenOwl:** `cd ~/stuypi-services/kitchenowl && docker compose up -d`. Data dir at `/mnt/ssd/kitchenowl/` is intact, so accounts, recipes, and shopping lists return as-is. Both the main app and the `kitchenowl-stats` sidecar require `KITCHENOWL_JWT_SECRET` and `KITCHENOWL_TOKEN` in `.env` — if those values changed, all sessions invalidate and the homepage widget breaks until refreshed.
+10b. **Bring up KitchenOwl:** `cd ~/stuypi-services/kitchenowl && docker compose up -d`. Data dir at `/mnt/ssd/kitchenowl/` is intact, so accounts, recipes, and shopping lists return as-is. Both the main app and the `kitchenowl-stats` sidecar require `KITCHENOWL_JWT_SECRET` and `KITCHENOWL_TOKEN` in `.env` — if those values changed, all sessions invalidate.
 11. **Reconfigure Uptime Kuma:** create user, re-add the 13 monitors and 1 status page (5 min via UI; faster via DB SQL if you keep a snapshot).
 12. **Reconfigure Beszel:** add the `stuypi` host as a system, install agent. Copy the new `BESZEL_AGENT_TOKEN` into `.env`.
 13. **Install Pi-hole.** Run the standard installer (`curl -sSL https://install.pi-hole.net | bash`). Once installed, **move the web admin off `:80`** so Caddy can take it: edit `/etc/pihole/pihole.toml`, find `[webserver].port`, change to `port = "8083o,[::]:8083o"`, then `sudo systemctl restart pihole-FTL`. Set Pi-hole admin password (push to `PIHOLE_PASSWORD` in `.env`).
 14. **Add Pi-hole local DNS overrides** for the 9 reverse-proxied subdomains. In `/etc/pihole/pihole.toml` find `[dns].hosts = []` and replace with:
     ```toml
-    hosts = ["16.242.6.136 stuypi.alexandrurosu.com", "16.242.6.136 watch.alexandrurosu.com", "16.242.6.136 photos.alexandrurosu.com", "16.242.6.136 status.alexandrurosu.com", "16.242.6.136 metrics.alexandrurosu.com", "16.242.6.136 speedtest.alexandrurosu.com", "16.242.6.136 pihole.alexandrurosu.com", "16.242.6.136 home.alexandrurosu.com", "16.242.6.136 kitchen.alexandrurosu.com"]
+    hosts = ["16.242.6.136 watch.alexandrurosu.com", "16.242.6.136 photos.alexandrurosu.com", "16.242.6.136 status.alexandrurosu.com", "16.242.6.136 metrics.alexandrurosu.com", "16.242.6.136 pihole.alexandrurosu.com", "16.242.6.136 home.alexandrurosu.com", "16.242.6.136 kitchen.alexandrurosu.com"]
     ```
     Then `sudo systemctl restart pihole-FTL`.
 15. **Bring up Caddy:** `cd ~/stuypi-services/caddy && docker compose up -d`. Caddyfile is committed so this Just Works (Phase 1 / HTTP-only). For Phase 2 / HTTPS, also restore `CLOUDFLARE_API_TOKEN` to `.env`, re-do the Phase 2 build steps from the section above.
-16. **Verify:** `curl -sI -H "Host: stuypi.alexandrurosu.com" http://localhost/` should return 200. From a client on LAN/WG, `http://stuypi.alexandrurosu.com` should load homepage.
 
 **Total recovery time:** ~1–2 hours, mostly wall-clock time waiting for image pulls and Plex's library scan.
 

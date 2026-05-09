@@ -11,17 +11,3 @@ services:
       TZ: America/New_York
     volumes:
       - /mnt/ssd/kitchenowl:/data
-
-  kitchenowl-stats:
-    image: python:3.13-alpine
-    container_name: kitchenowl-stats
-    restart: unless-stopped
-    depends_on:
-      - kitchenowl
-    ports:
-      - "9927:8000"
-    environment:
-      KO_TOKEN: ${KITCHENOWL_TOKEN}
-    volumes:
-      - ./stats.py:/app/stats.py:ro
-    command: python -u /app/stats.py

@@ -1,3 +1,4 @@
+browser_mod:
 default_config:
 http:
   use_x_forwarded_for: true
@@ -71,6 +72,32 @@ rest:
         unit_of_measurement: GB
         state_class: total
         icon: mdi:database
+  - resource: http://localhost:9928
+    scan_interval: 30
+    sensor:
+      - name: "Beszel CPU"
+        value_template: "{{ value_json.system.cpu }}"
+        unit_of_measurement: "%"
+
+      - name: "Beszel Memory"
+        value_template: "{{ value_json.system.memory }}"
+        unit_of_measurement: "%"
+
+      - name: "Beszel Disk"
+        value_template: "{{ value_json.system.disk }}"
+        unit_of_measurement: "%"
+
+      - name: "Beszel CPU Temp"
+        value_template: "{{ value_json.system.temp_cpu }}"
+        unit_of_measurement: "°C"
+
+      - name: "Beszel Memory Used"
+        value_template: "{{ value_json.system.memory_used_gb }}"
+        unit_of_measurement: "GB"
+
+      - name: "Beszel Memory Total"
+        value_template: "{{ value_json.system.memory_total_gb }}"
+        unit_of_measurement: "GB"
 template:
   - fan:
       - name: Fan

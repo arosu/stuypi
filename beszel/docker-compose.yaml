@@ -19,7 +19,6 @@ services:
       - /dev/sda:/dev/sda
     cap_add:
       - SYS_RAWIO  # required for S.M.A.R.T. data
-      # - SYS_ADMIN  # required for NVMe S.M.A.R.T. data
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./beszel_agent_data:/var/lib/beszel-agent
@@ -29,3 +28,21 @@ services:
       KEY: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAEnulpn8OotnNowpGvXKYo74pEPsUWOFch4wcQkguRj'
       TOKEN: ${BESZEL_AGENT_TOKEN}
       HUB_URL: http://localhost:8090
+
+  beszel-stats:
+    image: python:3.13-alpine
+    container_name: beszel-stats
+    restart: unless-stopped
+    depends_on:
+      - beszel
+    ports:
+      - "9928:8000"
+    environment:
+      BESZEL_URL: http://beszel:8090
+      BESZEL_USER: ${BESZEL_USER}
+      BESZEL_PASSWORD: ${BESZEL_PASSWORD}
+      BESZEL_SYSTEM: ${BESZEL_SYSTEM}
+      BESZEL_SYSTEM_ID: ${BESZEL_SYSTEM_ID}
+    volumes:
+      - ./stats.py:/app/stats.py:ro
+    command: python -u /app/stats.py
