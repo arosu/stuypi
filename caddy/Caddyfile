@@ -9,11 +9,6 @@
     }
 }
 
-stuypi.alexandrurosu.com {
-    import cf_tls
-    reverse_proxy localhost:3000
-}
-
 home.alexandrurosu.com {
     import cf_tls
     reverse_proxy localhost:8123 {
@@ -41,11 +36,6 @@ status.alexandrurosu.com {
 metrics.alexandrurosu.com {
     import cf_tls
     reverse_proxy localhost:8090
-}
-
-speedtest.alexandrurosu.com {
-    import cf_tls
-    reverse_proxy localhost:8080
 }
 
 pihole.alexandrurosu.com {
