@@ -7,13 +7,16 @@
 beszel/beszel_data/
 beszel/beszel_agent_data/
 beszel/beszel_socket/
-speedtest-tracker/config/
 uptime-kuma/data/
 plex/config/
-homepage/config/logs/
 arr-stack/config/
 caddy/data/
 caddy/config/
+wg-easy/data/
+pihole/etc-pihole/
+pihole/etc-dnsmasq.d/
+pihole/etc-pivpn/
+samba/.env
 
 # Home Assistant runtime state (keep yaml configs)
 home-assistant/config/.storage/

@@ -1,0 +1,21 @@
+services:
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    restart: unless-stopped
+    network_mode: host
+
+    environment:
+      TZ: America/New_York
+      FTLCONF_dns_listeningMode: "ALL"
+      FTLCONF_webserver_port: "8083o,[::]:8083o"
+      FTLCONF_misc_etc_dnsmasq_d: "true"
+
+    volumes:
+      - ./etc-pihole:/etc/pihole
+      - ./etc-dnsmasq.d:/etc/dnsmasq.d
+      - ./etc-pivpn:/etc/pivpn:ro
+
+    cap_add:
+      - SYS_NICE
+      - SYS_TIME

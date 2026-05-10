@@ -1,0 +1,68 @@
+services:
+  samba:
+    image: ghcr.io/servercontainers/samba:latest
+    container_name: samba
+    restart: unless-stopped
+    network_mode: host
+
+    environment:
+      TZ: America/New_York
+      AVAHI_DISABLE: "1"
+      WSDD2_DISABLE: "1"
+      NETBIOS_DISABLE: "1"
+      SAMBA_CONF_WORKGROUP: WORKGROUP
+      SAMBA_CONF_SERVER_STRING: "%h"
+      SAMBA_GLOBAL_STANZA: |-
+        interfaces = lo eth0;
+        bind interfaces only = yes;
+        smb ports = 445;
+        smb encrypt = required;
+        ntlm auth = no;
+        server min protocol = SMB3_02;
+        client min protocol = SMB3_02;
+        server signing = mandatory;
+        client signing = required;
+        client protection = sign;
+        log file = /var/log/samba/smb.log
+
+      GROUP_gpio: "991"
+
+      ACCOUNT_arosu: "${ACCOUNT_AROSU}"
+      UID_arosu: "1000"
+      GROUPS_arosu: "gpio"
+
+      ACCOUNT_iclotea: "${ACCOUNT_ICLOTEA}"
+      UID_iclotea: "1001"
+      GROUPS_iclotea: "gpio"
+
+      SAMBA_VOLUME_CONFIG_arosu: |-
+        [arosu]
+        comment = Alex's files
+        valid users = arosu
+        force user = arosu
+        path = /shares/arosu
+        available = yes
+        browsable = yes
+        read only = no
+        create mask = 0660
+        force create mode = 0660
+        force directory mode = 2770
+        vfs objects = fruit streams_xattr
+
+      SAMBA_VOLUME_CONFIG_iclotea: |-
+        [iclotea]
+        comment = Ioana's files
+        valid users = iclotea
+        force user = iclotea
+        path = /shares/iclotea
+        available = yes
+        browsable = yes
+        read only = no
+        create mask = 0660
+        force create mode = 0660
+        force directory mode = 2770
+        vfs objects = fruit streams_xattr
+
+    volumes:
+      - /mnt/ssd/files/arosu:/shares/arosu
+      - /mnt/ssd/files/iclotea:/shares/iclotea

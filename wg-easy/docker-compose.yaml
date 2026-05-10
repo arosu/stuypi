@@ -1,0 +1,20 @@
+services:
+  wg-easy:
+    image: ghcr.io/wg-easy/wg-easy:15
+    container_name: wg-easy
+    restart: unless-stopped
+    network_mode: host
+
+    environment:
+      TZ: America/New_York
+      # Required for first setup over plain HTTP. Keep the UI bound to localhost
+      # below, or put it behind Caddy before exposing it more broadly.
+      INSECURE: "true"
+
+    volumes:
+      - ./data:/etc/wireguard
+      - /lib/modules:/lib/modules:ro
+
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
