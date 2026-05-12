@@ -10,7 +10,7 @@ services:
     environment:
       TZ: America/New_York
       WATCHTOWER_CLEANUP: "true"
-      WATCHTOWER_NOTIFICATION_REPORT: "true"
+      WATCHTOWER_NOTIFICATION_REPORT: "false"
       WATCHTOWER_NO_STARTUP_MESSAGE: "true"
       WATCHTOWER_INCLUDE_RESTARTING: "true"
       WATCHTOWER_REVIVE_STOPPED: "false"
