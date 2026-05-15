@@ -33,29 +33,36 @@
     - conditions:
       - condition: template
         value_template: "{{ states.light | selectattr('state', 'eq', 'on') | list
+          | count > 0 \n   or states.fan | selectattr('state', 'eq', 'on') | list
           | count > 0\n   or states.media_player | selectattr('state', 'in', ['playing','paused','on','idle'])
           | list | count > 0 }}\n"
       sequence:
       - action: light.turn_off
         target:
           entity_id:
-          - light.ac
+          - light.bedroom_ac
+          - light.office_ac
           - light.couch
-          - light.fan
           - light.hallway
           - light.lamp
           - light.nightstand
           - light.towel_heater
         data:
-          transition: 3
+          transition: 1
+      - action: fan.turn_off
+        target:
+          entity_id:
+          - fan.purifier_cool_e_series_tp07_tp09
+          - fan.fan_2
       - action: media_player.turn_off
         target:
           entity_id:
           - media_player.5e_pod
           - media_player.living_room
     - conditions:
-      - condition: sun
-        after: sunset
+      - condition: state
+        entity_id: sun.sun
+        state: below_horizon
       sequence:
       - action: script.good_evening
     default:
@@ -123,6 +130,52 @@
   - action: script.turn_on
     target:
       entity_id: script.good_{{ trigger.id }}
+  mode: parallel
+- id: '1778200000001'
+  alias: Office Switch toggle lamp and office AC
+  description: Button 1 toggles light.lamp, button 4 toggles light.office_ac
+  triggers:
+  - device_id: f930d23eab0cf687dba501bd4ee5a1ae
+    domain: hue
+    type: initial_press
+    subtype: 1
+    trigger: device
+    id: lamp
+  - device_id: f930d23eab0cf687dba501bd4ee5a1ae
+    domain: hue
+    type: initial_press
+    subtype: 4
+    trigger: device
+    id: ac
+  conditions: []
+  actions:
+  - action: light.toggle
+    target:
+      entity_id: "{{ 'light.lamp' if trigger.id == 'lamp' else 'light.office_ac' }}"
+  mode: parallel
+- id: '1778200000002'
+  alias: Office Switch dim lamp
+  description: Up/down buttons on the office switch adjust light.lamp by ±10%
+  triggers:
+  - device_id: f930d23eab0cf687dba501bd4ee5a1ae
+    domain: hue
+    type: initial_press
+    subtype: 2
+    trigger: device
+    id: up
+  - device_id: f930d23eab0cf687dba501bd4ee5a1ae
+    domain: hue
+    type: initial_press
+    subtype: 3
+    trigger: device
+    id: down
+  conditions: []
+  actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.lamp
+    data:
+      brightness_step_pct: '{{ 10 if trigger.id == ''up'' else -10 }}'
   mode: parallel
 - id: '1778283997028'
   alias: Plex Movie Lighting Automation
