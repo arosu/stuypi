@@ -1,0 +1,15 @@
+homeassistant:
+  enabled: true
+frontend:
+  enabled: true
+  port: 8080
+mqtt:
+  base_topic: zigbee2mqtt
+  server: mqtt://mosquitto:1883
+serial:
+  port: /dev/ttyACM0
+  adapter: ezsp
+version: 5
+devices:
+  '0x10a562fffe55827a':
+    friendly_name: bedroom_shade_1

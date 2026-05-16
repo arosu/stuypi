@@ -18,6 +18,14 @@ pihole/etc-dnsmasq.d/
 pihole/etc-pivpn/
 samba/.env
 
+# Zigbee2MQTT runtime state (keep configuration.yaml)
+zigbee2mqtt/data/database.db
+zigbee2mqtt/data/state.json
+zigbee2mqtt/data/coordinator_backup.json
+zigbee2mqtt/data/log/
+zigbee2mqtt/data/configuration_backup_v*.yaml
+zigbee2mqtt/data/migration-*.log
+
 # Home Assistant runtime state (keep yaml configs)
 home-assistant/config/.storage/
 home-assistant/config/.cloud/

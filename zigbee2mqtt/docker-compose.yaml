@@ -1,0 +1,24 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto:/mosquitto/config
+
+  zigbee2mqtt:
+    image: koenkk/zigbee2mqtt
+    container_name: zigbee2mqtt
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    devices:
+      - /dev/serial/by-id/usb-SONOFF_SONOFF_Dongle_Lite_MG21_44a50ad552a2ef11bfc1946661ce3355-if00-port0:/dev/ttyACM0
+    environment:
+      - TZ=America/New_York
