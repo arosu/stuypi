@@ -10,6 +10,10 @@ serial:
   port: /dev/ttyACM0
   adapter: ezsp
 version: 5
+external_converters:
+  - external_converters/aubor_shade.js
 devices:
-  '0x10a562fffe55827a':
+  '0x10a562fffe557c70':
+    friendly_name: bedroom_shade_2
+  '0x10a562fffe558248':
     friendly_name: bedroom_shade_1

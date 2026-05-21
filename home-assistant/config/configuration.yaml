@@ -217,3 +217,58 @@ template:
           {{ ((states('sensor.purifier_cool_e_series_tp07_tp09_temperature') | float - 32) * 5 / 9) | round(1) }}
         attributes:
           humidity: "{{ states('sensor.purifier_cool_e_series_tp07_tp09_humidity') }}%"
+    cover:
+      - name: Bedroom Shade 1
+        unique_id: bedroom_shade_1_scaled
+        default_entity_id: cover.bedroom_shade_1_scaled
+        position: >-
+          {% set p = state_attr('cover.bedroom_shade_1', 'current_position') | int(23) %} {{ [((p - 23) / 0.77) | round(0), 0] | max }}
+        set_cover_position:
+          - action: cover.set_cover_position
+            target:
+              entity_id: cover.bedroom_shade_1
+            data:
+              position: "{{ ((position | int(0) * 0.77) + 23) | round(0) }}"
+        open_cover:
+          - action: cover.set_cover_position
+            target:
+              entity_id: cover.bedroom_shade_1
+            data:
+              position: 100
+        close_cover:
+          - action: cover.set_cover_position
+            target:
+              entity_id: cover.bedroom_shade_1
+            data:
+              position: 23
+        stop_cover:
+          - action: cover.stop_cover
+            target:
+              entity_id: cover.bedroom_shade_1
+      - name: Bedroom Shade 2
+        unique_id: bedroom_shade_2_scaled
+        default_entity_id: cover.bedroom_shade_2_scaled
+        position: >-
+          {% set p = state_attr('cover.bedroom_shade_2', 'current_position') | int(54) %} {{ [((p - 54) / 0.46) | round(0), 0] | max }}
+        set_cover_position:
+          - action: cover.set_cover_position
+            target:
+              entity_id: cover.bedroom_shade_2
+            data:
+              position: "{{ ((position | int(0) * 0.46) + 54) | round(0) }}"
+        open_cover:
+          - action: cover.set_cover_position
+            target:
+              entity_id: cover.bedroom_shade_2
+            data:
+              position: 100
+        close_cover:
+          - action: cover.set_cover_position
+            target:
+              entity_id: cover.bedroom_shade_2
+            data:
+              position: 54
+        stop_cover:
+          - action: cover.stop_cover
+            target:
+              entity_id: cover.bedroom_shade_2

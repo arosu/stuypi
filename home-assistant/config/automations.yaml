@@ -65,6 +65,16 @@
         state: below_horizon
       sequence:
       - action: script.good_evening
+      - if:
+        - condition: sun
+          after: sunset
+          after_offset: 02:00:00
+        then:
+        - action: cover.close_cover
+          target:
+            entity_id:
+            - cover.bedroom_shade_1_scaled
+            - cover.bedroom_shade_2_scaled
     default:
     - action: script.good_morning
   mode: single
@@ -151,7 +161,8 @@
   actions:
   - action: light.toggle
     target:
-      entity_id: "{{ 'light.lamp' if trigger.id == 'lamp' else 'light.office_ac' }}"
+      entity_id: '{{ ''light.lamp'' if trigger.id == ''lamp'' else ''light.office_ac''
+        }}'
   mode: parallel
 - id: '1778200000002'
   alias: Office Switch dim lamp
@@ -221,3 +232,38 @@
         data:
           brightness_pct: 100
   mode: restart
+- id: '1779408000000'
+  alias: Close Bedroom Shades 2h After Sunset
+  description: Close bedroom shades two hours after sunset if it's not already closed
+  triggers:
+  - trigger: sun
+    event: sunset
+    offset: 02:00:00
+  conditions:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: light.couch
+      state: 'on'
+    - condition: state
+      entity_id: light.hallway
+      state: 'on'
+  - condition: or
+    conditions:
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: cover.bedroom_shade_1_scaled
+        state: closed
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: cover.bedroom_shade_2_scaled
+        state: closed
+  actions:
+  - action: cover.close_cover
+    target:
+      entity_id:
+      - cover.bedroom_shade_1_scaled
+      - cover.bedroom_shade_2_scaled
+  mode: single

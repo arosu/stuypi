@@ -30,6 +30,25 @@ good_night:
       entity_id:
       - media_player.5e_pod
       - media_player.living_room
+  - if:
+    - condition: or
+      conditions:
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: cover.bedroom_shade_1_scaled
+          state: closed
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: cover.bedroom_shade_2_scaled
+          state: closed
+    then:
+    - action: cover.close_cover
+      target:
+        entity_id:
+        - cover.bedroom_shade_1_scaled
+        - cover.bedroom_shade_2_scaled
   alias: Good Night
   description: ''
 good_morning:
@@ -59,6 +78,11 @@ good_morning:
       target:
         entity_id: fan.fan_2
       data: {}
+    - action: cover.open_cover
+      target:
+        entity_id:
+        - cover.bedroom_shade_1_scaled
+        - cover.bedroom_shade_2_scaled
   alias: Good Morning
   description: ''
 good_evening:
