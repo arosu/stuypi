@@ -32,10 +32,26 @@
   - choose:
     - conditions:
       - condition: template
-        value_template: "{{ states.light | selectattr('state', 'eq', 'on') | list
-          | count > 0 \n   or states.fan | selectattr('state', 'eq', 'on') | list
-          | count > 0\n   or states.media_player | selectattr('state', 'in', ['playing','paused','on','idle'])
-          | list | count > 0 }}\n"
+        value_template: >-
+          {{
+            expand(
+              'light.bedroom_ac',
+              'light.office_ac',
+              'light.couch',
+              'light.hallway',
+              'light.lamp',
+              'light.nightstand',
+              'light.towel_heater',
+              'fan.purifier_cool_e_series_tp07_tp09',
+              'fan.fan_2',
+              'media_player.5e_pod',
+              'media_player.plex_plex_for_apple_tv_apple_tv',
+              'media_player.living_room'
+            )
+            | selectattr('state', 'in', ['on', 'playing', 'paused'])
+            | list
+            | count > 0
+          }}
       sequence:
       - action: light.turn_off
         target:
@@ -58,6 +74,7 @@
         target:
           entity_id:
           - media_player.5e_pod
+          - media_player.plex_plex_for_apple_tv_apple_tv
           - media_player.living_room
     - conditions:
       - condition: state
@@ -66,18 +83,22 @@
       sequence:
       - action: script.good_evening
       - if:
-        - condition: sun
-          after: sunset
-          after_offset: 02:00:00
+        - condition: state
+          entity_id: sun.sun
+          state: below_horizon
+          for:
+            hours: 2
         then:
         - action: cover.close_cover
           target:
             entity_id:
-            - cover.bedroom_shade_1_scaled
-            - cover.bedroom_shade_2_scaled
+            - cover.bedroom_shade_1
+            - cover.bedroom_shade_2_homekit
+      - action: script.main_switch_temperature_cooling
     default:
     - action: script.good_morning
-  mode: single
+    - action: script.main_switch_temperature_cooling
+  mode: restart
 - id: '1778103900001'
   alias: Low Battery Alert
   description: Discord notif when any device's battery drops below 20%
@@ -253,17 +274,92 @@
     - condition: not
       conditions:
       - condition: state
-        entity_id: cover.bedroom_shade_1_scaled
+        entity_id: cover.bedroom_shade_1
         state: closed
     - condition: not
       conditions:
       - condition: state
-        entity_id: cover.bedroom_shade_2_scaled
+        entity_id: cover.bedroom_shade_2_homekit
         state: closed
   actions:
   - action: cover.close_cover
     target:
       entity_id:
-      - cover.bedroom_shade_1_scaled
-      - cover.bedroom_shade_2_scaled
+      - cover.bedroom_shade_1
+      - cover.bedroom_shade_2_homekit
+  mode: single
+- id: '1784696400000'
+  alias: Bedroom Hot Room Assist
+  description: Turn on bedroom cooling when the bedroom is uncomfortable while active at home
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.bedroom_cooling_needed
+    to: 'on'
+    for:
+      minutes: 15
+  - trigger: state
+    entity_id:
+    - light.couch
+    - light.hallway
+    to: 'on'
+    for:
+      minutes: 2
+  conditions:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: light.couch
+      state: 'on'
+    - condition: state
+      entity_id: light.hallway
+      state: 'on'
+  - condition: state
+    entity_id: binary_sensor.bedroom_cooling_needed
+    state: 'on'
+  actions:
+  - action: fan.turn_on
+    target:
+      entity_id: fan.bedroom_ac
+  - action: fan.turn_on
+    target:
+      entity_id: fan.fan_2
+    data:
+      percentage: 100
+      preset_mode: normal
+  mode: single
+- id: '1784696700000'
+  alias: Living Room Hot Room Assist
+  description: Turn on living room cooling when the living room is uncomfortable while active at home
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.living_room_cooling_needed
+    to: 'on'
+    for:
+      minutes: 15
+  - trigger: state
+    entity_id:
+    - light.couch
+    - light.hallway
+    to: 'on'
+    for:
+      minutes: 2
+  conditions:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: light.couch
+      state: 'on'
+    - condition: state
+      entity_id: light.hallway
+      state: 'on'
+  - condition: state
+    entity_id: binary_sensor.living_room_cooling_needed
+    state: 'on'
+  actions:
+  - action: fan.turn_on
+    target:
+      entity_id: fan.office_ac
+  - action: fan.turn_on
+    target:
+      entity_id: fan.dyson
   mode: single

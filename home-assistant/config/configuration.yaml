@@ -1,11 +1,5 @@
 browser_mod:
 default_config:
-http:
-  use_x_forwarded_for: true
-  trusted_proxies:
-    - 127.0.0.1
-    - ::1
-    - 172.16.0.0/12
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
@@ -76,27 +70,33 @@ rest:
     scan_interval: 30
     sensor:
       - name: "Beszel CPU"
-        value_template: "{{ value_json.system.cpu }}"
+        value_template: "{{ value_json.get('system', {}).get('cpu') }}"
+        availability: "{{ value_json.get('system', {}).get('cpu') is number }}"
         unit_of_measurement: "%"
 
       - name: "Beszel Memory"
-        value_template: "{{ value_json.system.memory }}"
+        value_template: "{{ value_json.get('system', {}).get('memory') }}"
+        availability: "{{ value_json.get('system', {}).get('memory') is number }}"
         unit_of_measurement: "%"
 
       - name: "Beszel Disk"
-        value_template: "{{ value_json.system.disk }}"
+        value_template: "{{ value_json.get('system', {}).get('disk') }}"
+        availability: "{{ value_json.get('system', {}).get('disk') is number }}"
         unit_of_measurement: "%"
 
       - name: "Beszel CPU Temp"
-        value_template: "{{ value_json.system.temp_cpu }}"
+        value_template: "{{ value_json.get('system', {}).get('temp_cpu') }}"
+        availability: "{{ value_json.get('system', {}).get('temp_cpu') is number }}"
         unit_of_measurement: "°C"
 
       - name: "Beszel Memory Used"
-        value_template: "{{ value_json.system.memory_used_gb }}"
+        value_template: "{{ value_json.get('system', {}).get('memory_used_gb') }}"
+        availability: "{{ value_json.get('system', {}).get('memory_used_gb') is number }}"
         unit_of_measurement: "GB"
 
       - name: "Beszel Memory Total"
-        value_template: "{{ value_json.system.memory_total_gb }}"
+        value_template: "{{ value_json.get('system', {}).get('memory_total_gb') }}"
+        availability: "{{ value_json.get('system', {}).get('memory_total_gb') is number }}"
         unit_of_measurement: "GB"
 template:
   - fan:
@@ -170,6 +170,53 @@ template:
             target:
               entity_id:
                 - light.towel_heater
+    cover:
+      - name: Bedroom Shade 1 HomeKit
+        unique_id: bedroom_shade_1_homekit
+        default_entity_id: cover.bedroom_shade_1_homekit
+        state: "{{ states('cover.bedroom_shade_1') }}"
+        open_cover:
+          - action: cover.open_cover
+            target:
+              entity_id: cover.bedroom_shade_1
+        close_cover:
+          - action: cover.close_cover
+            target:
+              entity_id: cover.bedroom_shade_1
+        stop_cover:
+          - action: cover.stop_cover
+            target:
+              entity_id: cover.bedroom_shade_1
+      - name: Bedroom Shade 2
+        unique_id: bedroom_shade_2_homekit_v2
+        default_entity_id: cover.bedroom_shade_2_homekit
+        availability: >-
+          {{ states('cover.bedroom_shade_2_raw') not in ['unknown', 'unavailable']
+             and state_attr('cover.bedroom_shade_2_raw', 'current_position') is number }}
+        position: >-
+          {{ state_attr('cover.bedroom_shade_2_raw', 'current_position') | int }}
+        set_cover_position:
+          - action: cover.set_cover_position
+            target:
+              entity_id: cover.bedroom_shade_2_raw
+            data:
+              position: "{{ position | int }}"
+        open_cover:
+          - action: cover.set_cover_position
+            target:
+              entity_id: cover.bedroom_shade_2_raw
+            data:
+              position: 100
+        close_cover:
+          - action: cover.set_cover_position
+            target:
+              entity_id: cover.bedroom_shade_2_raw
+            data:
+              position: 0
+        stop_cover:
+          - action: cover.stop_cover
+            target:
+              entity_id: cover.bedroom_shade_2_raw
     sensor:
       - name: >
           {% if is_state('sun.sun', 'above_horizon') %}Sunset{% else %}Sunrise{% endif %}
@@ -217,58 +264,55 @@ template:
           {{ ((states('sensor.purifier_cool_e_series_tp07_tp09_temperature') | float - 32) * 5 / 9) | round(1) }}
         attributes:
           humidity: "{{ states('sensor.purifier_cool_e_series_tp07_tp09_humidity') }}%"
-    cover:
-      - name: Bedroom Shade 1
-        unique_id: bedroom_shade_1_scaled
-        default_entity_id: cover.bedroom_shade_1_scaled
-        position: >-
-          {% set p = state_attr('cover.bedroom_shade_1', 'current_position') | int(23) %} {{ [((p - 23) / 0.77) | round(0), 0] | max }}
-        set_cover_position:
-          - action: cover.set_cover_position
-            target:
-              entity_id: cover.bedroom_shade_1
-            data:
-              position: "{{ ((position | int(0) * 0.77) + 23) | round(0) }}"
-        open_cover:
-          - action: cover.set_cover_position
-            target:
-              entity_id: cover.bedroom_shade_1
-            data:
-              position: 100
-        close_cover:
-          - action: cover.set_cover_position
-            target:
-              entity_id: cover.bedroom_shade_1
-            data:
-              position: 23
-        stop_cover:
-          - action: cover.stop_cover
-            target:
-              entity_id: cover.bedroom_shade_1
-      - name: Bedroom Shade 2
-        unique_id: bedroom_shade_2_scaled
-        default_entity_id: cover.bedroom_shade_2_scaled
-        position: >-
-          {% set p = state_attr('cover.bedroom_shade_2', 'current_position') | int(54) %} {{ [((p - 54) / 0.46) | round(0), 0] | max }}
-        set_cover_position:
-          - action: cover.set_cover_position
-            target:
-              entity_id: cover.bedroom_shade_2
-            data:
-              position: "{{ ((position | int(0) * 0.46) + 54) | round(0) }}"
-        open_cover:
-          - action: cover.set_cover_position
-            target:
-              entity_id: cover.bedroom_shade_2
-            data:
-              position: 100
-        close_cover:
-          - action: cover.set_cover_position
-            target:
-              entity_id: cover.bedroom_shade_2
-            data:
-              position: 54
-        stop_cover:
-          - action: cover.stop_cover
-            target:
-              entity_id: cover.bedroom_shade_2
+      - name: Indoor Humidity
+        unique_id: indoor_humidity
+        default_entity_id: sensor.indoor_humidity
+        unit_of_measurement: "%"
+        state_class: measurement
+        availability: "{{ is_number(states('sensor.purifier_cool_e_series_tp07_tp09_humidity')) }}"
+        state: "{{ states('sensor.purifier_cool_e_series_tp07_tp09_humidity') | float | round(0) }}"
+      - name: Outdoor Temperature Celsius
+        unique_id: outdoor_temperature_celsius
+        default_entity_id: sensor.outdoor_temperature_celsius
+        unit_of_measurement: "°C"
+        state_class: measurement
+        availability: "{{ state_attr('weather.forecast_home', 'temperature') is number }}"
+        state: >-
+          {{ ((state_attr('weather.forecast_home', 'temperature') | float - 32) * 5 / 9) | round(1) }}
+      - name: Bedroom Discomfort Index
+        unique_id: bedroom_discomfort_index
+        default_entity_id: sensor.bedroom_discomfort_index
+        state_class: measurement
+        availability: >-
+          {{ is_number(states('sensor.fan_temperature_celsius'))
+             and is_number(states('sensor.indoor_humidity')) }}
+        state: >-
+          {% set t = states('sensor.fan_temperature_celsius') | float %} {% set rh = states('sensor.indoor_humidity') | float %} {{ (t - (0.55 * (1 - (rh / 100)) * (t - 14.5))) | round(1) }}
+      - name: Living Room Discomfort Index
+        unique_id: living_room_discomfort_index
+        default_entity_id: sensor.living_room_discomfort_index
+        state_class: measurement
+        availability: >-
+          {{ is_number(states('sensor.purifier_temperature_celsius'))
+             and is_number(states('sensor.indoor_humidity')) }}
+        state: >-
+          {% set t = states('sensor.purifier_temperature_celsius') | float %} {% set rh = states('sensor.indoor_humidity') | float %} {{ (t - (0.55 * (1 - (rh / 100)) * (t - 14.5))) | round(1) }}
+    binary_sensor:
+      - name: Bedroom Cooling Needed
+        unique_id: bedroom_cooling_needed
+        default_entity_id: binary_sensor.bedroom_cooling_needed
+        icon: mdi:air-conditioner
+        state: |-
+          {% set t = states('sensor.fan_temperature_celsius') | float(-99) %}
+          {% set d = states('sensor.bedroom_discomfort_index') | float(-99) %}
+          {% set outside = states('sensor.outdoor_temperature_celsius') | float(-99) %}
+          {{ d >= 24.5 or t >= 26.5 or (outside >= 28 and d >= 24.0) }}
+      - name: Living Room Cooling Needed
+        unique_id: living_room_cooling_needed
+        default_entity_id: binary_sensor.living_room_cooling_needed
+        icon: mdi:air-conditioner
+        state: |-
+          {% set t = states('sensor.purifier_temperature_celsius') | float(-99) %}
+          {% set d = states('sensor.living_room_discomfort_index') | float(-99) %}
+          {% set outside = states('sensor.outdoor_temperature_celsius') | float(-99) %}
+          {{ d >= 24.5 or t >= 26.5 or (outside >= 28 and d >= 24.0) }}

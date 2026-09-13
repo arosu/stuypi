@@ -36,19 +36,19 @@ good_night:
       - condition: not
         conditions:
         - condition: state
-          entity_id: cover.bedroom_shade_1_scaled
+          entity_id: cover.bedroom_shade_1
           state: closed
       - condition: not
         conditions:
         - condition: state
-          entity_id: cover.bedroom_shade_2_scaled
+          entity_id: cover.bedroom_shade_2_homekit
           state: closed
     then:
     - action: cover.close_cover
       target:
         entity_id:
-        - cover.bedroom_shade_1_scaled
-        - cover.bedroom_shade_2_scaled
+        - cover.bedroom_shade_1
+        - cover.bedroom_shade_2_homekit
   alias: Good Night
   description: ''
 good_morning:
@@ -81,12 +81,21 @@ good_morning:
     - action: cover.open_cover
       target:
         entity_id:
-        - cover.bedroom_shade_1_scaled
-        - cover.bedroom_shade_2_scaled
+        - cover.bedroom_shade_1
+        - cover.bedroom_shade_2_homekit
   alias: Good Morning
   description: ''
 good_evening:
   sequence:
+  - action: adaptive_lighting.set_manual_control
+    data:
+      entity_id: switch.all_lights_adaptive_lighting_all_lights
+      lights:
+      - light.couch
+      - light.hallway
+      - light.lamp
+      - light.nightstand
+      manual_control: true
   - parallel:
     - action: light.turn_on
       target:
@@ -112,5 +121,68 @@ good_evening:
       data:
         brightness_pct: 100
         transition: 1
+  - delay:
+      seconds: 2
+  - action: adaptive_lighting.set_manual_control
+    data:
+      entity_id: switch.all_lights_adaptive_lighting_all_lights
+      lights:
+      - light.couch
+      - light.hallway
+      - light.lamp
+      - light.nightstand
+      manual_control: false
+  - if:
+    - condition: template
+      value_template: "{{ is_state('binary_sensor.bedroom_cooling_needed', 'on') }}"
+    then:
+    - action: fan.turn_on
+      target:
+        entity_id: fan.bedroom_ac
+    - action: fan.turn_on
+      target:
+        entity_id: fan.fan_2
+      data:
+        percentage: 100
+        preset_mode: normal
   alias: Good Evening
+  description: ''
+main_switch_temperature_cooling:
+  sequence:
+  - if:
+    - condition: state
+      entity_id: binary_sensor.bedroom_cooling_needed
+      state: 'on'
+    then:
+    - action: fan.turn_on
+      target:
+        entity_id: fan.bedroom_ac
+    - action: fan.turn_on
+      target:
+        entity_id: fan.fan_2
+      data:
+        percentage: 100
+        preset_mode: normal
+  - if:
+    - condition: state
+      entity_id: binary_sensor.living_room_cooling_needed
+      state: 'on'
+    then:
+    - action: fan.turn_on
+      target:
+        entity_id: fan.office_ac
+  - if:
+    - condition: or
+      conditions:
+      - condition: state
+        entity_id: binary_sensor.bedroom_cooling_needed
+        state: 'on'
+      - condition: state
+        entity_id: binary_sensor.living_room_cooling_needed
+        state: 'on'
+    then:
+    - action: fan.turn_on
+      target:
+        entity_id: fan.dyson
+  alias: Main Switch Temperature Cooling
   description: ''

@@ -25,6 +25,8 @@ zigbee2mqtt/data/coordinator_backup.json
 zigbee2mqtt/data/log/
 zigbee2mqtt/data/configuration_backup_v*.yaml
 zigbee2mqtt/data/migration-*.log
+zigbee2mqtt/data.bak.*/
+zigbee2mqtt/data/*.bak-*
 
 # Home Assistant runtime state (keep yaml configs)
 home-assistant/config/.storage/

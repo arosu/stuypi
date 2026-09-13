@@ -16,7 +16,9 @@ services:
     restart: unless-stopped
     network_mode: host
     devices:
-      - /dev/sda:/dev/sda
+      - source: /dev/disk/by-id/usb-Samsung_PSSD_T7_S7MPNS0X501293A-0:0
+        target: /dev/sda
+        permissions: rwm
     cap_add:
       - SYS_RAWIO  # required for S.M.A.R.T. data
     volumes:

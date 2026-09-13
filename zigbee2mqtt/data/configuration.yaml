@@ -8,12 +8,49 @@ mqtt:
   server: mqtt://mosquitto:1883
 serial:
   port: /dev/ttyACM0
-  adapter: ezsp
+  adapter: ember
+advanced:
+  channel: 11
+  network_key:
+    - 196
+    - 182
+    - 70
+    - 53
+    - 221
+    - 179
+    - 76
+    - 162
+    - 214
+    - 75
+    - 200
+    - 159
+    - 49
+    - 241
+    - 149
+    - 119
+  pan_id: 30192
+  ext_pan_id:
+    - 174
+    - 231
+    - 82
+    - 32
+    - 215
+    - 224
+    - 72
+    - 125
 version: 5
 external_converters:
   - external_converters/aubor_shade.js
 devices:
-  '0x10a562fffe557c70':
-    friendly_name: bedroom_shade_2
   '0x10a562fffe558248':
     friendly_name: bedroom_shade_1
+    invert_cover: false
+    disable_automatic_update_check: true
+    optimistic: true
+    retain: true
+    cover_position_tilt_disable_report: false
+    description: North-facing window
+  '0x10a562fffe557c70':
+    friendly_name: bedroom_shade_2
+    description: Shade over the AC
+    invert_cover: true
