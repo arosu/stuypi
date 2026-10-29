@@ -44,11 +44,15 @@ good_night:
           entity_id: cover.bedroom_shade_2_homekit
           state: closed
     then:
+    - action: script.turn_on
+      target:
+        entity_id: script.bedroom_shade_1_move
+      data:
+        variables:
+          direction: close
     - action: cover.close_cover
       target:
-        entity_id:
-        - cover.bedroom_shade_1
-        - cover.bedroom_shade_2_homekit
+        entity_id: cover.bedroom_shade_2_homekit
   alias: Good Night
   description: ''
 good_morning:
@@ -78,11 +82,15 @@ good_morning:
       target:
         entity_id: fan.fan_2
       data: {}
+    - action: script.turn_on
+      target:
+        entity_id: script.bedroom_shade_1_move
+      data:
+        variables:
+          direction: open
     - action: cover.open_cover
       target:
-        entity_id:
-        - cover.bedroom_shade_1
-        - cover.bedroom_shade_2_homekit
+        entity_id: cover.bedroom_shade_2_homekit
   alias: Good Morning
   description: ''
 good_evening:
@@ -132,6 +140,33 @@ good_evening:
       - light.lamp
       - light.nightstand
       manual_control: false
+  - delay:
+      seconds: 3
+  - parallel:
+    - action: light.turn_on
+      target:
+        entity_id: light.couch
+      data:
+        brightness_pct: 100
+        transition: 1
+    - action: light.turn_on
+      target:
+        entity_id: light.hallway
+      data:
+        brightness_pct: 60
+        transition: 1
+    - action: light.turn_on
+      target:
+        entity_id: light.lamp
+      data:
+        brightness_pct: 60
+        transition: 1
+    - action: light.turn_on
+      target:
+        entity_id: light.nightstand
+      data:
+        brightness_pct: 100
+        transition: 1
   - if:
     - condition: template
       value_template: "{{ is_state('binary_sensor.bedroom_cooling_needed', 'on') }}"
@@ -186,3 +221,39 @@ main_switch_temperature_cooling:
         entity_id: fan.dyson
   alias: Main Switch Temperature Cooling
   description: ''
+bedroom_shade_1_move:
+  alias: Bedroom Shade 1 (with retry)
+  description: Opens or closes shade 1, retrying if it doesn't report the new state. Shade 1 intermittently times out.
+  mode: queued
+  fields:
+    direction:
+      description: open or close
+      example: close
+      required: true
+      selector:
+        select:
+          options:
+          - open
+          - close
+  variables:
+    wanted: "{{ 'open' if direction == 'open' else 'closed' }}"
+  sequence:
+  - repeat:
+      sequence:
+      - action: "{{ 'cover.open_cover' if direction == 'open' else 'cover.close_cover' }}"
+        target:
+          entity_id: cover.bedroom_shade_1
+        continue_on_error: true
+      - wait_template: "{{ is_state('cover.bedroom_shade_1', wanted) }}"
+        timeout: 20
+        continue_on_timeout: true
+      until:
+      - condition: template
+        value_template: "{{ is_state('cover.bedroom_shade_1', wanted) or repeat.index >= 3 }}"
+  - if:
+    - condition: template
+      value_template: "{{ not is_state('cover.bedroom_shade_1', wanted) }}"
+    then:
+    - action: rest_command.discord_notify
+      data:
+        message: "\u26a0\ufe0f Bedroom shade 1 didn't {{ direction }} after 3 attempts"
