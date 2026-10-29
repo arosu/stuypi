@@ -21,13 +21,12 @@
   alias: Main Switch turn on/off everything
   description: ''
   triggers:
-  - device_id: ddaf15587de09778ed684181c576fdcc
-    domain: hue
-    type: initial_press
-    subtype: 1
-    unique_id: 1645b2dc-5b54-49e5-9dc6-9b8a17d9c2cc
-    trigger: device
-  conditions: []
+  - trigger: state
+    entity_id: event.main_switch_button_1
+  conditions:
+  - condition: template
+    value_template: >-
+      {{ trigger.to_state.attributes.event_type == 'initial_press' }}
   actions:
   - choose:
     - conditions:
@@ -121,19 +120,16 @@
   alias: Main Switch dim couch and hallway
   description: Up/down buttons on the main switch adjust couch+hallway by ±10%
   triggers:
-  - device_id: ddaf15587de09778ed684181c576fdcc
-    domain: hue
-    type: initial_press
-    subtype: 2
-    trigger: device
+  - trigger: state
+    entity_id: event.main_switch_button_2
     id: up
-  - device_id: ddaf15587de09778ed684181c576fdcc
-    domain: hue
-    type: initial_press
-    subtype: 3
-    trigger: device
+  - trigger: state
+    entity_id: event.main_switch_button_3
     id: down
-  conditions: []
+  conditions:
+  - condition: template
+    value_template: >-
+      {{ trigger.to_state.attributes.event_type == 'initial_press' }}
   actions:
   - action: light.turn_on
     target:
@@ -166,19 +162,16 @@
   alias: Office Switch toggle lamp and office AC
   description: Button 1 toggles light.lamp, button 4 toggles light.office_ac
   triggers:
-  - device_id: f930d23eab0cf687dba501bd4ee5a1ae
-    domain: hue
-    type: initial_press
-    subtype: 1
-    trigger: device
+  - trigger: state
+    entity_id: event.office_switch_button_1
     id: lamp
-  - device_id: f930d23eab0cf687dba501bd4ee5a1ae
-    domain: hue
-    type: initial_press
-    subtype: 4
-    trigger: device
+  - trigger: state
+    entity_id: event.office_switch_button_4
     id: ac
-  conditions: []
+  conditions:
+  - condition: template
+    value_template: >-
+      {{ trigger.to_state.attributes.event_type == 'initial_press' }}
   actions:
   - action: light.toggle
     target:
@@ -189,19 +182,16 @@
   alias: Office Switch dim lamp
   description: Up/down buttons on the office switch adjust light.lamp by ±10%
   triggers:
-  - device_id: f930d23eab0cf687dba501bd4ee5a1ae
-    domain: hue
-    type: initial_press
-    subtype: 2
-    trigger: device
+  - trigger: state
+    entity_id: event.office_switch_button_2
     id: up
-  - device_id: f930d23eab0cf687dba501bd4ee5a1ae
-    domain: hue
-    type: initial_press
-    subtype: 3
-    trigger: device
+  - trigger: state
+    entity_id: event.office_switch_button_3
     id: down
-  conditions: []
+  conditions:
+  - condition: template
+    value_template: >-
+      {{ trigger.to_state.attributes.event_type == 'initial_press' }}
   actions:
   - action: light.turn_on
     target:

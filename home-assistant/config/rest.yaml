@@ -1,0 +1,86 @@
+- resource: http://localhost:2283/api/server/statistics
+  scan_interval: 600
+  headers:
+    x-api-key: !secret immich_api_key
+    Accept: application/json
+  sensor:
+    - name: Immich Photos
+      unique_id: immich_photos
+      value_template: "{{ value_json.photos }}"
+      state_class: total
+      icon: mdi:image-multiple
+    - name: Immich Videos
+      unique_id: immich_videos
+      value_template: "{{ value_json.videos }}"
+      state_class: total
+      icon: mdi:video
+    - name: Immich Storage
+      unique_id: immich_storage
+      value_template: "{{ (value_json.usage / 1024**3) | round(1) }}"
+      unit_of_measurement: GB
+      state_class: total
+      icon: mdi:database
+    - name: Immich Alex Photos
+      unique_id: immich_alex_photos
+      value_template: "{{ value_json.usageByUser | selectattr('userName', 'eq', 'Alexandru Rosu') | map(attribute='photos') | first }}"
+      state_class: total
+      icon: mdi:image
+    - name: Immich Alex Videos
+      unique_id: immich_alex_videos
+      value_template: "{{ value_json.usageByUser | selectattr('userName', 'eq', 'Alexandru Rosu') | map(attribute='videos') | first }}"
+      state_class: total
+      icon: mdi:video
+    - name: Immich Alex Storage
+      unique_id: immich_alex_storage
+      value_template: "{{ (value_json.usageByUser | selectattr('userName', 'eq', 'Alexandru Rosu') | map(attribute='usage') | first / 1024**3) | round(1) }}"
+      unit_of_measurement: GB
+      state_class: total
+      icon: mdi:database
+    - name: Immich Ioana Photos
+      unique_id: immich_ioana_photos
+      value_template: "{{ value_json.usageByUser | selectattr('userName', 'eq', 'Ioana Clotea') | map(attribute='photos') | first }}"
+      state_class: total
+      icon: mdi:image
+    - name: Immich Ioana Videos
+      unique_id: immich_ioana_videos
+      value_template: "{{ value_json.usageByUser | selectattr('userName', 'eq', 'Ioana Clotea') | map(attribute='videos') | first }}"
+      state_class: total
+      icon: mdi:video
+    - name: Immich Ioana Storage
+      unique_id: immich_ioana_storage
+      value_template: "{{ (value_json.usageByUser | selectattr('userName', 'eq', 'Ioana Clotea') | map(attribute='usage') | first / 1024**3) | round(1) }}"
+      unit_of_measurement: GB
+      state_class: total
+      icon: mdi:database
+- resource: http://localhost:9928
+  scan_interval: 30
+  sensor:
+    - name: "Beszel CPU"
+      value_template: "{{ value_json.get('system', {}).get('cpu') }}"
+      availability: "{{ value_json.get('system', {}).get('cpu') is number }}"
+      unit_of_measurement: "%"
+
+    - name: "Beszel Memory"
+      value_template: "{{ value_json.get('system', {}).get('memory') }}"
+      availability: "{{ value_json.get('system', {}).get('memory') is number }}"
+      unit_of_measurement: "%"
+
+    - name: "Beszel Disk"
+      value_template: "{{ value_json.get('system', {}).get('disk') }}"
+      availability: "{{ value_json.get('system', {}).get('disk') is number }}"
+      unit_of_measurement: "%"
+
+    - name: "Beszel CPU Temp"
+      value_template: "{{ value_json.get('system', {}).get('temp_cpu') }}"
+      availability: "{{ value_json.get('system', {}).get('temp_cpu') is number }}"
+      unit_of_measurement: "°C"
+
+    - name: "Beszel Memory Used"
+      value_template: "{{ value_json.get('system', {}).get('memory_used_gb') }}"
+      availability: "{{ value_json.get('system', {}).get('memory_used_gb') is number }}"
+      unit_of_measurement: "GB"
+
+    - name: "Beszel Memory Total"
+      value_template: "{{ value_json.get('system', {}).get('memory_total_gb') }}"
+      availability: "{{ value_json.get('system', {}).get('memory_total_gb') is number }}"
+      unit_of_measurement: "GB"
