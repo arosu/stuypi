@@ -34,6 +34,7 @@ in gitignored service directories such as `plex/config/`, `uptime-kuma/data/`,
 | wg-easy | `51820/udp`, `51821/tcp` | WireGuard VPN and admin UI | `wg-easy/data/` |
 | Samba | `445` | Private SMB shares | `/mnt/ssd/files/{arosu,iclotea}`, `samba/.env` |
 | KitchenOwl | `9926` | Shopping list and recipes | `/mnt/ssd/kitchenowl/` |
+| Churning Tracker | `9930` (localhost) | Card credits, cards and bank bonuses | `churning-tracker/data/`, pushed to GitHub |
 | Watchtower | internal | Scheduled image updates | Docker socket |
 
 Deleted services: `homepage` and `speedtest-tracker`.
@@ -76,6 +77,7 @@ Resolution is LAN/VPN-only through Pi-hole DNS overrides.
 | `https://pihole.alexandrurosu.com` | Pi-hole `localhost:8083/admin` |
 | `https://home.alexandrurosu.com` | Home Assistant `localhost:8123` |
 | `https://kitchen.alexandrurosu.com` | KitchenOwl `localhost:9926` |
+| `https://churning.alexandrurosu.com` | Churning Tracker `localhost:9930` |
 
 Clients must use the Pi as DNS:
 
@@ -225,6 +227,7 @@ df -h /mnt/ssd
    cd ~/stuypi-services/immich && docker compose up -d
    cd ~/stuypi-services/plex && docker compose up -d
    cd ~/stuypi-services/kitchenowl && docker compose up -d
+   cd ~/stuypi-services/churning-tracker && docker compose up -d --build
    cd ~/stuypi-services/samba && docker compose up -d
    cd ~/stuypi-services/home-assistant && docker compose up -d
    cd ~/stuypi-services/arr-stack && docker compose up -d
@@ -293,3 +296,18 @@ As of this cleanup:
 - Compose files validate with the current `.env`.
 - Docker containers for Pi-hole, wg-easy, Samba, KitchenOwl, Beszel, Plex, and
   the rest of the stack are running.
+
+### Churning Tracker
+
+`churning-tracker/` is a checkout of the private `arosu/churning-tracker` repo,
+ignored by this one. Its own `docker-compose.yaml` builds and runs it; see its
+README. The server commits `data/churning.json` and pushes it to GitHub with a
+deploy key that can write to that repo only, `~/.ssh/churning_deploy`. If the SD
+card dies, clone the repo again (the data comes with it), recreate the deploy
+key and add it under the repo's Settings, Deploy keys, with write access.
+
+Update to the latest code:
+
+```sh
+cd ~/stuypi-services/churning-tracker && git pull && docker compose up -d --build
+```

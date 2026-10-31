@@ -4,6 +4,8 @@
 !.env.example
 
 # Application data / runtime state
+# Churning Tracker is its own repo (github.com/arosu/churning-tracker), cloned here
+churning-tracker/
 beszel/beszel_data/
 beszel/beszel_agent_data/
 beszel/beszel_socket/

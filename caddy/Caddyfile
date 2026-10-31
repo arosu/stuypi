@@ -49,3 +49,8 @@ kitchen.alexandrurosu.com {
     import cf_tls
     reverse_proxy localhost:9926
 }
+
+churning.alexandrurosu.com {
+    import cf_tls
+    reverse_proxy localhost:9930
+}
