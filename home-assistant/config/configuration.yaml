@@ -1,13 +1,6 @@
 browser_mod:
 default_config:
 
-# Reverse proxy (Caddy runs on this host, so it connects from localhost)
-http:
-  use_x_forwarded_for: true
-  trusted_proxies:
-    - 127.0.0.1
-    - ::1
-
 # Keep the SD card happy: fewer writes, shorter history, no 30s Beszel polling in the db
 recorder:
   purge_keep_days: 7
