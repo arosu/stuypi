@@ -22,6 +22,7 @@ WEBHOOK_URL = os.environ["RCLONE_DISCORD_WEBHOOK_URL"]
 KUMA_PUSH_URL = os.environ["KUMA_PUSH_URL_BACKBLAZE"]
 LOG_DIR = "/home/arosu/logs/backblaze-rclone-sync/"
 KITCHENOWL_BACKUPS_DIR = "/mnt/ssd/kitchenowl/backups"
+KITCHENOWL_LAST_EXPORT_FILE = "/mnt/ssd/kitchenowl/last-export"
 KITCHENOWL_MAX_DUMP_AGE_DAYS = 7
 
 
@@ -57,6 +58,9 @@ def latest_kitchenowl_dump_age_days():
     )
     if not files:
         return None
+    # Unchanged exports skip the dump but still touch this file.
+    if os.path.exists(KITCHENOWL_LAST_EXPORT_FILE):
+        files.append(KITCHENOWL_LAST_EXPORT_FILE)
     newest_mtime = max(os.path.getmtime(f) for f in files)
     return (datetime.now().timestamp() - newest_mtime) / 86400
 
